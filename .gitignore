@@ -19,3 +19,4 @@ test-results/
 next-env.d.ts
 /out/
 !.env.example
+.uploads/
