@@ -24,3 +24,7 @@ next-env.d.ts
 .pge2e/
 .e2e-db-url
 backups/
+
+# Licensed fonts: never committed (fetched at build from a private bucket, see scripts/fonts.mts)
+public/fonts/*.woff2
+assets/fonts/

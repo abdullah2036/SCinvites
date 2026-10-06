@@ -15,7 +15,11 @@
     "hash-password": "tsx scripts/hash-password.ts",
     "db:seed": "tsx scripts/seed-demo.mts",
     "backup": "tsx scripts/backup.mts",
-    "restore": "tsx scripts/restore.mts"
+    "restore": "tsx scripts/restore.mts",
+    "reset-data": "tsx scripts/reset-data.mts",
+    "fonts:fetch": "tsx --env-file-if-exists=.env.local scripts/fonts.mts",
+    "fonts:upload": "tsx --env-file-if-exists=.env.local scripts/fonts.mts upload",
+    "prebuild": "npm run fonts:fetch"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
