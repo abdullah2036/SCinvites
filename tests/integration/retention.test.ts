@@ -51,15 +51,15 @@ describe('guest data retention', () => {
   });
 
   it('health check queries the database', async () => {
-    const res = await health(makeRequest('GET', '/api/health'), p);
+    const res = await health();
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
   });
 
   it('cron route requires the bearer secret', async () => {
-    expect((await cron(makeRequest('GET', '/api/cron/retention'), p)).status).toBe(401);
-    expect((await cron(makeRequest('GET', '/api/cron/retention', { headers: { authorization: 'Bearer wrong' } }), p)).status).toBe(401);
-    const ok = await cron(makeRequest('GET', '/api/cron/retention', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } }), p);
+    expect((await cron(makeRequest('GET', '/api/cron/retention'))).status).toBe(401);
+    expect((await cron(makeRequest('GET', '/api/cron/retention', { headers: { authorization: 'Bearer wrong' } }))).status).toBe(401);
+    const ok = await cron(makeRequest('GET', '/api/cron/retention', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } }));
     expect(ok.status).toBe(200);
   });
 });
