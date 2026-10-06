@@ -19,9 +19,17 @@ export const OWNER_DEVICE_MAX_AGE = 365 * 86400;
 
 /** OWNER_PASSWORD_HASH may be a raw bcrypt hash or "b64:<base64>" ($-free, so .env expansion cannot mangle it). */
 export function ownerHash(): string | undefined {
-  const v = process.env.OWNER_PASSWORD_HASH?.trim();
+  // Tolerate quotes/whitespace that sneak in when pasting into a dashboard.
+  const v = process.env.OWNER_PASSWORD_HASH?.trim().replace(/^(['"])(.*)\1$/, '$2').trim();
   if (!v) return undefined;
-  return v.startsWith('b64:') ? Buffer.from(v.slice(4), 'base64').toString('utf8') : v;
+  return v.startsWith('b64:') ? Buffer.from(v.slice(4), 'base64').toString('utf8').trim() : v;
+}
+
+/** For the status page: is OWNER_PASSWORD_HASH present and shaped like a bcrypt hash (never reveals it). */
+export function checkOwnerHashFormat(): 'ok' | 'missing' | 'invalid' {
+  const h = ownerHash();
+  if (!h) return 'missing';
+  return /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(h) ? 'ok' : 'invalid';
 }
 
 /** Devices that signed in successfully before are exempt from the global lock, so an attacker can't lock the owner out. */

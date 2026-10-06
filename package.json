@@ -19,7 +19,8 @@
     "reset-data": "tsx scripts/reset-data.mts",
     "fonts:fetch": "tsx --env-file-if-exists=.env.local scripts/fonts.mts",
     "fonts:upload": "tsx --env-file-if-exists=.env.local scripts/fonts.mts upload",
-    "prebuild": "npm run fonts:fetch"
+    "prebuild": "npm run fonts:fetch",
+    "check-password": "tsx scripts/check-password.mts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
