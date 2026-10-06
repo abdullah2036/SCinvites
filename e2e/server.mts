@@ -1,11 +1,19 @@
 // Playwright web server: real local Postgres + migrations, then `next dev` on :3100 with e2e settings.
 import { spawn } from 'node:child_process';
 import bcrypt from 'bcryptjs';
-import { writeFileSync } from 'node:fs';
+import { readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { startLocalPostgres } from '../lib/server/local-pg.ts';
 import { E2E } from './config.ts';
 
-const pg = await startLocalPostgres({ dataDir: '.pge2e', persistent: false });
+// A fresh folder per run: a killed run can leave an orphaned postgres holding the previous one (Windows).
+for (const d of (() => { try { return readdirSync('.pge2e'); } catch { return []; } })()) {
+  try {
+    rmSync(`.pge2e/${d}`, { recursive: true, force: true });
+  } catch {
+    /* still locked by an orphan; ignore */
+  }
+}
+const pg = await startLocalPostgres({ dataDir: `.pge2e/run-${Date.now()}`, persistent: false });
 writeFileSync(E2E.dbUrlFile, pg.url);
 const child = spawn('npx', ['next', 'dev', '-p', String(E2E.port)], {
   stdio: 'inherit',

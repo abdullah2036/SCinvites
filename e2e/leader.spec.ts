@@ -36,9 +36,14 @@ test('full leader flow: access request → approval → one-time login → names
   // 4. leader submits three names (stepped flow on phones)
   await page.getByRole('link', { name: /ثورة الصواريخ/ }).first().click();
   await expect(page.getByText('دعواتي / إنشاء')).toBeVisible();
-  for (let i = 0; i < 3 && !(await page.locator('#bulk').isVisible()); i++) await page.getByRole('button', { name: /التالي/ }).click();
+  // step 1 of 4 (template) → step 2 (invitees)
+  await page.getByRole('button', { name: /التالي/ }).click();
+  await expect(page.locator('#bulk')).toBeVisible();
   await page.locator('#bulk').fill('د. هالة البيشي — جامعة الملك عبدالعزيز\nأ. عبدالله الغامدي\nم. ريم العمري — أرامكو');
-  while (await page.getByRole('button', { name: /التالي/ }).isVisible()) await page.getByRole('button', { name: /التالي/ }).click();
+  // invitees → place → review
+  await page.getByRole('button', { name: /التالي/ }).click();
+  await page.getByRole('button', { name: /التالي/ }).click();
+  await expect(page.getByRole('button', { name: 'إرسال للاعتماد' })).toBeVisible();
   await expect(page.getByText(/القاعة/).first()).toBeVisible();
   await page.getByRole('button', { name: 'إرسال للاعتماد' }).click();
   await expect(page.getByText(/أرسلت ٣ أسماء/)).toBeVisible();
