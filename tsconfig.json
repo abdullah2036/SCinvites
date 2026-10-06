@@ -26,7 +26,8 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "allowImportingTsExtensions": true
   },
   "include": [
     "next-env.d.ts",
@@ -39,6 +40,12 @@
     ".next-e2e/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next",
+    ".next-e2e",
+    ".pgdata",
+    ".pgtest",
+    ".pge2e",
+    "design-reference"
   ]
 }
