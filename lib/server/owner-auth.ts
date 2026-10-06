@@ -13,6 +13,13 @@ const LOCK_MINUTES = 15;
 // Compared against when no hash is configured, so response timing doesn't reveal that.
 const DUMMY_HASH = bcrypt.hashSync('not-the-password', 12);
 
+/** OWNER_PASSWORD_HASH may be a raw bcrypt hash or "b64:<base64>" ($-free, so .env expansion cannot mangle it). */
+export function ownerHash(): string | undefined {
+  const v = process.env.OWNER_PASSWORD_HASH?.trim();
+  if (!v) return undefined;
+  return v.startsWith('b64:') ? Buffer.from(v.slice(4), 'base64').toString('utf8') : v;
+}
+
 async function isLocked(ipHash: string): Promise<boolean> {
   const [r] = await sql<{ ip_fails: number; global_fails: number; last_fail_recent: boolean }[]>`
     select
@@ -28,7 +35,7 @@ export async function ownerLogin(password: string, ip: string, userAgent: string
   const ipHash = sha256(ip);
   if (await isLocked(ipHash)) throw new AppError('locked', 423, 'تم إيقاف الدخول مؤقتًا، حاول بعد ١٥ دقيقة');
 
-  const hash = process.env.OWNER_PASSWORD_HASH;
+  const hash = ownerHash();
   const ok = (await bcrypt.compare(password, hash || DUMMY_HASH)) && !!hash;
   await sql`insert into auth_attempts (ip_hash, succeeded) values (${ipHash}, ${ok})`;
 

@@ -111,11 +111,13 @@ export async function templatesVisibleToLeader(leader: { committee: string }, no
     order by e.starts_at asc`;
 }
 
-export async function listGalleryTemplates(filter: { track?: Track; stamp?: string }): Promise<TemplateWithEvent[]> {
+/** Approved templates; `upcoming` keeps events that have not ended (with a day of grace). */
+export async function listGalleryTemplates(filter: { track?: Track; stamp?: string; upcoming?: boolean }): Promise<TemplateWithEvent[]> {
   return sql<TemplateWithEvent[]>`
     ${withEvent()}
     where t.status = 'approved'
       ${filter.track ? sql`and t.track = ${filter.track}` : sql``}
       ${filter.stamp ? sql`and ${filter.stamp} = any(t.stamp_types)` : sql``}
+      ${filter.upcoming ? sql`and coalesce(e.ends_at, e.starts_at) > now() - interval '1 day'` : sql``}
     order by t.approved_at desc`;
 }

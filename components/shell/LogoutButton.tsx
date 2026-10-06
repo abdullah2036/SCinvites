@@ -1,6 +1,9 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 export default function LogoutButton({ endpoint = '/api/owner/logout' }: { endpoint?: string }) {
+  const router = useRouter();
   return (
     <button
       type="button"
@@ -8,7 +11,8 @@ export default function LogoutButton({ endpoint = '/api/owner/logout' }: { endpo
       title="تسجيل الخروج"
       onClick={async () => {
         await fetch(endpoint, { method: 'POST' }).catch(() => null);
-        location.assign('/');
+        router.replace('/');
+        router.refresh();
       }}
       style={{ width: 34, height: 34, borderRadius: '50%', border: 0, background: 'transparent', color: '#4F6567', cursor: 'pointer', display: 'grid', placeItems: 'center' }}
     >

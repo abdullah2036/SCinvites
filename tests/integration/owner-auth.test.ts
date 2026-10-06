@@ -33,6 +33,17 @@ describe('owner login', () => {
     expect(await getSession(decodeURIComponent(c.value), 'owner')).toMatchObject({ subject: 'owner' });
   });
 
+  it('accepts the hash in b64: form (survives env-file $ expansion)', async () => {
+    const raw = process.env.OWNER_PASSWORD_HASH!;
+    process.env.OWNER_PASSWORD_HASH = 'b64:' + Buffer.from(raw).toString('base64');
+    try {
+      expect((await attempt('correct horse')).status).toBe(200);
+      expect((await attempt('nope')).status).toBe(401);
+    } finally {
+      process.env.OWNER_PASSWORD_HASH = raw;
+    }
+  });
+
   it('rejects a wrong password with an Arabic message', async () => {
     const res = await attempt('nope');
     expect(res.status).toBe(401);

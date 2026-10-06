@@ -15,7 +15,7 @@ const child = spawn('npx', ['next', 'dev', '-p', String(E2E.port)], {
     DB_POOL_MAX: '5',
     APP_URL: E2E.baseURL,
     OWNER_PATH: E2E.ownerPath,
-    OWNER_PASSWORD_HASH: bcrypt.hashSync(E2E.ownerPassword, 4),
+    OWNER_PASSWORD_HASH: "b64:" + Buffer.from(bcrypt.hashSync(E2E.ownerPassword, 4)).toString("base64"),
     CRON_SECRET: 'e2e-cron',
     RESEND_API_KEY: '',
     SUPABASE_URL: '',
