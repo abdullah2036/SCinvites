@@ -5,14 +5,11 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
+  {
+    files: ["tests/**", "e2e/**"],
+    rules: { "@typescript-eslint/no-explicit-any": "off" },
+  },
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", ".pgdata/**", ".pgtest/**", "design-reference/**", "playwright-report/**", "test-results/**"]),
 ]);
 
 export default eslintConfig;
