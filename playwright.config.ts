@@ -10,8 +10,8 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['iPhone 13'], browserName: 'chromium' } },
   ],
   webServer: {
-    command: 'npx next dev -p 3100',
-    url: 'http://localhost:3100/',
+    command: 'npx tsx e2e/server.mts',
+    url: 'http://localhost:3100/robots.txt',
     reuseExistingServer: false,
     timeout: 240_000,
   },

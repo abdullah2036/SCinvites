@@ -144,3 +144,12 @@ export async function getIcsData(slug: string) {
     url: `${process.env.APP_URL}/i/${inv.slug}`,
   };
 }
+
+/** Name of a registration made on this invitation (returning guest with the sc_reg_<slug> cookie), else null. */
+export async function getRegistrationName(slug: string, registrationId: string | null | undefined): Promise<string | null> {
+  if (!registrationId || !/^[0-9a-f-]{36}$/.test(registrationId)) return null;
+  const [row] = await sql<{ name: string }[]>`
+    select r.name from registrations r join invitations i on i.id = r.invitation_id
+    where r.id = ${registrationId} and i.slug = ${slug} and r.anonymized_at is null`;
+  return row?.name ?? null;
+}

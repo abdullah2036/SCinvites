@@ -1,5 +1,5 @@
 // Runs a persistent local Postgres for development on port 54329 (data in .pgdata/).
-import { startLocalPostgres } from '../lib/server/local-pg';
+import { startLocalPostgres } from '../lib/server/local-pg.ts';
 
 const pg = await startLocalPostgres({ dataDir: '.pgdata', port: 54329, persistent: true });
 console.log(`Local Postgres ready: ${pg.url}`);

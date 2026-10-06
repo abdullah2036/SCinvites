@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "db:dev": "tsx scripts/dev-db.ts",
-    "db:migrate": "tsx scripts/migrate.ts",
+    "db:dev": "tsx scripts/dev-db.mts",
+    "db:migrate": "tsx scripts/migrate.mts",
     "hash-password": "tsx scripts/hash-password.ts"
   },
   "dependencies": {

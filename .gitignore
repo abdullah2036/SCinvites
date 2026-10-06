@@ -20,3 +20,5 @@ next-env.d.ts
 /out/
 !.env.example
 .uploads/
+.next-e2e/
+.pge2e/

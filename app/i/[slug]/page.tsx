@@ -1,0 +1,30 @@
+import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
+import { notFound } from 'next/navigation';
+import { getGuestView, getRegistrationName } from '@/lib/server/guest';
+import GuestClient from './GuestClient';
+import Unavailable from './Unavailable';
+
+export const dynamic = 'force-dynamic';
+
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ src?: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const view = await getGuestView((await params).slug);
+  // Never put the invitee's name in metadata or previews.
+  return {
+    title: view ? `دعوة — ${view.event.title}` : 'دعوة — نادي العلوم',
+    robots: { index: false, follow: false },
+    openGraph: view ? { title: `دعوة من نادي العلوم — ${view.event.title}`, description: view.event.subtitle ?? 'نادي العلوم' } : undefined,
+  };
+}
+
+export default async function GuestPage({ params, searchParams }: Props) {
+  const { slug } = await params;
+  const view = await getGuestView(slug);
+  if (!view) notFound();
+  if (view.status === 'revoked') return <Unavailable />;
+  const registeredName = view.kind === 'general' ? await getRegistrationName(slug, (await cookies()).get(`sc_reg_${slug}`)?.value) : null;
+  const { src } = await searchParams;
+  return <GuestClient view={view} registeredName={registeredName} src={src ?? null} />;
+}

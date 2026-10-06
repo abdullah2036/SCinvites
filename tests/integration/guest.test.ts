@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { sql } from '@/lib/server/db';
-import { getGuestView, openInvitation, answerRsvp } from '@/lib/server/guest';
+import { getGuestView, openInvitation, answerRsvp, getRegistrationName } from '@/lib/server/guest';
 import { GET as getView } from '@/app/api/i/[slug]/route';
 import { POST as postOpen } from '@/app/api/i/[slug]/open/route';
 import { POST as postRsvp } from '@/app/api/i/[slug]/rsvp/route';
@@ -109,6 +109,15 @@ describe('guest api', () => {
     expect(again.status).toBe(200);
     const rsvp = await postRsvp(makeRequest('POST', '/api/i/rr26/rsvp', { body: { answer: 'yes' }, cookies: { sc_reg_rr26: cookie.value }, ip: '3.3.3.3' }), params('rr26'));
     expect(rsvp.status).toBe(200);
+  });
+
+  it('recognises a returning registration only on its own invitation', async () => {
+    await makeInvitation({ template_id: templateId, slug: 'rr26', kind: 'general', invitee_name: null });
+    await makeInvitation({ template_id: templateId, slug: 'other', kind: 'general', invitee_name: null });
+    const { registrationId } = await openInvitation('rr26', { name: 'ريم', email: 'r@x.com' }, null, meta);
+    expect(await getRegistrationName('rr26', registrationId)).toBe('ريم');
+    expect(await getRegistrationName('other', registrationId)).toBeNull();
+    expect(await getRegistrationName('rr26', 'not-a-uuid')).toBeNull();
   });
 
   it('view route returns 404 for unknown slugs', async () => {
