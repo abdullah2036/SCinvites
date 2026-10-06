@@ -6,7 +6,7 @@ describe('toolchain', () => {
   it('runs in UTC with the Thmanyah fonts present', () => {
     expect(process.env.TZ).toBe('UTC');
     for (const f of ['thmanyahsans-Regular', 'thmanyahsans-Medium', 'thmanyahsans-Bold', 'thmanyahserifdisplay-Bold']) {
-      expect(existsSync(path.join(process.cwd(), 'app/fonts', `${f}.woff2`))).toBe(true);
+      expect(existsSync(path.join(process.cwd(), 'public/fonts', `${f}.woff2`))).toBe(true);
     }
   });
 });

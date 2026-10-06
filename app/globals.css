@@ -1,4 +1,6 @@
+@import "../styles/fonts.css";
 @import "../styles/tokens.css";
+@import "../styles/motion.css";
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }

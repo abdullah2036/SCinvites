@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { thmanyahSans, thmanyahDisplay } from './fonts';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -11,7 +10,11 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html dir="rtl" lang="ar" className={`${thmanyahSans.variable} ${thmanyahDisplay.variable}`}>
+    <html dir="rtl" lang="ar">
+      <head>
+        <link rel="preload" href="/fonts/thmanyahsans-Regular.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/thmanyahserifdisplay-Bold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      </head>
       <body>{children}</body>
     </html>
   );
