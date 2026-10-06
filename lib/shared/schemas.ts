@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { TRACKS, COLORS, STAMPS } from './types';
 
-const text = (min: number, max: number) => z.string().trim().min(min).max(max);
+// Invisible direction/zero-width marks are stripped before length checks (copied text from WhatsApp/Word).
+const INVISIBLE = /[​-‏‪-‮⁦-⁩﻿]/g;
+const text = (min: number, max: number) => z.string().transform((s) => s.replace(INVISIBLE, '').trim()).pipe(z.string().min(min).max(max));
 const optText = (max: number) =>
   z
     .string()

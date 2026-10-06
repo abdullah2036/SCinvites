@@ -26,3 +26,10 @@ export function formatTime(iso: string | Date): string {
 export function toArabicDigits(n: number | string): string {
   return String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[Number(d)]);
 }
+
+const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+
+/** "YYYY-MM-DD" of the Riyadh calendar day (for <input type="date">). */
+export function riyadhDay(iso: string | Date | null): string {
+  return iso ? dayFmt.format(new Date(iso)) : '';
+}

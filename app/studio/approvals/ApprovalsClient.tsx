@@ -80,6 +80,17 @@ export default function ApprovalsClient({ requests: initial }: { requests: Pendi
       tpl: `${cur.eventTitle} · ${PALETTE[cur.color].label} · ${TRACK_INFO[cur.track].name}`,
       stamp: cur.stamp,
       due: daysLeft(cur.startsAt),
+      placeLine: (
+        <span style={{ fontSize: 13, color: '#3E5456', display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+          {cur.place.type === 'none' ? 'بدون مكان' : `${cur.place.type === 'online' ? 'عن بعد' : 'المكان'}: ${cur.place.name ?? '—'}`}
+          {cur.place.url && (
+            <a href={cur.place.url} target="_blank" rel="noopener noreferrer" dir="ltr" style={{ fontSize: 12 }}>
+              {cur.place.url}
+            </a>
+          )}
+          {cur.place.url && <span>· {cur.showQr ? 'يحمل باركود لهذا الرابط' : 'بدون باركود'}</span>}
+        </span>
+      ),
     },
     names: cur
       ? cur.people.map((p) => {

@@ -95,3 +95,11 @@ export async function listLeaders(): Promise<LeaderListItem[]> {
     order by case status when 'pending' then 0 when 'approved' then 1 else 2 end, name`;
   return rows.map((r) => ({ ...r, createdAt: new Date(r.createdAt).toISOString() }));
 }
+
+export async function updateLeaderCommittee(id: string, committee: string): Promise<void> {
+  const c = committee.replace(/s+/g, ' ').trim();
+  if (c.length < 2 || c.length > 60) throw new AppError('invalid_input', 400, 'اكتبي اسم اللجنة');
+  const rows = await sql`update leaders set committee = ${c} where id = ${id} returning id`;
+  if (!rows.length) throw new AppError('not_found', 404, 'القائد غير موجود');
+  await audit('owner', 'leader.committee', id, { committee: c });
+}

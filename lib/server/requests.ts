@@ -103,7 +103,7 @@ export async function decideRequest(
     for (const p of kept) {
       await invitations.createInvitation(
         { templateId: r.template_id, color: r.color, stamp: r.stamp, kind: 'personal', invitee: { name: p.name, org: p.org, title: p.title }, customSlug: null, place: { type: r.place_type, name: r.place_name, url: r.place_url }, showQr: r.show_qr },
-        { leaderId: r.leader_id, requestId: id, db: tx as never },
+        { leaderId: r.leader_id, requestId: id, db: tx as never, allowSuperseded: true },
       );
     }
     await tx`update leader_requests set status = 'approved', decided_at = now() where id = ${id}`;
@@ -155,12 +155,13 @@ export type PendingRequest = {
   color: Color;
   stamp: string;
   place: { type: PlaceType; name: string | null; url: string | null };
+  showQr: boolean;
   people: { id: string; name: string; org: string | null; title: string | null }[];
 };
 
 export async function listPendingRequests(): Promise<PendingRequest[]> {
-  const rows = await sql<{ id: string; created_at: Date; leader_name: string; committee: string; title: string; subtitle: string | null; latin_title: string | null; starts_at: Date; track: Track; color: Color; stamp: string; place_type: PlaceType; place_name: string | null; place_url: string | null }[]>`
-    select r.id, r.created_at, l.name as leader_name, l.committee, e.title, e.subtitle, e.latin_title, e.starts_at, t.track, r.color, r.stamp, r.place_type, r.place_name, r.place_url
+  const rows = await sql<{ id: string; created_at: Date; leader_name: string; committee: string; title: string; subtitle: string | null; latin_title: string | null; starts_at: Date; track: Track; color: Color; stamp: string; place_type: PlaceType; place_name: string | null; place_url: string | null; show_qr: boolean }[]>`
+    select r.id, r.created_at, r.show_qr, l.name as leader_name, l.committee, e.title, e.subtitle, e.latin_title, e.starts_at, t.track, r.color, r.stamp, r.place_type, r.place_name, r.place_url
     from leader_requests r join leaders l on l.id = r.leader_id join templates t on t.id = r.template_id join events e on e.id = t.event_id
     where r.status = 'pending' order by r.created_at asc`;
   if (!rows.length) return [];
@@ -179,6 +180,7 @@ export async function listPendingRequests(): Promise<PendingRequest[]> {
     color: r.color,
     stamp: r.stamp,
     place: { type: r.place_type, name: r.place_name, url: r.place_url },
+    showQr: r.show_qr,
     people: people.filter((p) => p.request_id === r.id).map((p) => ({ id: p.id, name: p.name, org: p.org, title: p.title })),
   }));
 }

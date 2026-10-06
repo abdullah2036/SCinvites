@@ -19,6 +19,8 @@ export type InvitationProps = {
   /** General invitation already registered on this device (skips the name/email form) */
   registered?: boolean;
   registeredName?: string;
+  /** Earlier RSVP of a returning public guest */
+  initialAnswer?: 'yes' | 'no' | null;
   onOpen?: (input: { name: string; email: string }) => Promise<void>;
   onRsvp?: (answer: 'yes' | 'no') => Promise<void>;
   onSave?: (node: HTMLElement) => Promise<void>;
@@ -26,7 +28,7 @@ export type InvitationProps = {
 
 const LOAD_MS = 2600;
 
-export default function Invitation({ view, mode: requestedMode, frame = 'fill', initialPhase, registered, registeredName, onOpen, onRsvp, onSave }: InvitationProps) {
+export default function Invitation({ view, mode: requestedMode, frame = 'fill', initialPhase, registered, registeredName, initialAnswer, onOpen, onRsvp, onSave }: InvitationProps) {
   const mode = useMotionMode(requestedMode);
   const general = view.kind === 'general';
   const afterLoad = (): Phase => (general && !registered ? 'gate' : 'open');
@@ -39,7 +41,7 @@ export default function Invitation({ view, mode: requestedMode, frame = 'fill', 
   const [gname, setGname] = useState('');
   const [gmail, setGmail] = useState('');
   const [openedName, setOpenedName] = useState(registeredName ?? '');
-  const [rsvp, setRsvp] = useState<'' | 'yes' | 'no'>('');
+  const [rsvp, setRsvp] = useState<'' | 'yes' | 'no'>(initialAnswer ?? (view.status === 'confirmed' ? 'yes' : view.status === 'declined' ? 'no' : ''));
   const [saved, setSaved] = useState(false);
   const [cal, setCal] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -148,6 +150,7 @@ export default function Invitation({ view, mode: requestedMode, frame = 'fill', 
     isOnline: online,
     placeLabel: online ? 'عن بعد' : 'المكان',
     placeName: view.place.name ?? (online ? 'رابط الانضمام' : 'الموقع'),
+    placeUrl: view.place.url,
     qrLabel: online ? 'امسح للانضمام' : 'امسح لفتح الموقع',
     qrSvg: view.qrSvg,
     save: async () => {

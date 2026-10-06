@@ -48,7 +48,10 @@ const SettingsPatch = z
 /** Validates and upserts only the given keys; returns the full settings. */
 export async function updateSettings(patch: unknown): Promise<Settings> {
   const p = SettingsPatch.parse(patch);
-  const rows = Object.entries(p).map(([key, value]) => ({ key, value: sql.json(value as never) }));
+  // null means "not set": remove the row so getSettings falls back to the default.
+  const cleared = Object.entries(p).filter(([, v]) => v === null).map(([k]) => k);
+  const rows = Object.entries(p).filter(([, v]) => v !== null).map(([key, value]) => ({ key, value: sql.json(value as never) }));
+  if (cleared.length) await sql`delete from settings where key = any(${cleared})`;
   if (rows.length) await sql`insert into settings ${sql(rows)} on conflict (key) do update set value = excluded.value`;
   return getSettings();
 }

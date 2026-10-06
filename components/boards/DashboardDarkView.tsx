@@ -47,6 +47,7 @@ export default function DashboardDarkView({ v }: { v: any }) {
               <span style={S({ fontSize: "13px", color: "#4F6567" })}>
 {v.cur.from} · القالب: {v.cur.tpl} · الختم: {v.cur.stamp}
               </span>
+              {v.cur.placeLine}
             </div>
             <span style={S({ fontSize: "12px", padding: "6px 12px", borderRadius: "999px", background: "rgba(201,154,46,.14)", color: "#8E6C1F", fontWeight: "700" })}>
 {v.cur.due}

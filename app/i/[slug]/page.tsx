@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { getGuestView, getRegistrationName } from '@/lib/server/guest';
+import { getGuestView, getRegistration } from '@/lib/server/guest';
 import GuestClient from './GuestClient';
 import Unavailable from './Unavailable';
 
@@ -24,7 +24,7 @@ export default async function GuestPage({ params, searchParams }: Props) {
   const view = await getGuestView(slug);
   if (!view) notFound();
   if (view.status === 'revoked') return <Unavailable />;
-  const registeredName = view.kind === 'general' ? await getRegistrationName(slug, (await cookies()).get(`sc_reg_${slug}`)?.value) : null;
+  const registration = view.kind === 'general' ? await getRegistration(slug, (await cookies()).get(`sc_reg_${slug}`)?.value) : null;
   const { src } = await searchParams;
-  return <GuestClient view={view} registeredName={registeredName} src={src ?? null} />;
+  return <GuestClient view={view} registeredName={registration?.name ?? null} initialAnswer={registration?.answer ?? null} src={src ?? null} />;
 }

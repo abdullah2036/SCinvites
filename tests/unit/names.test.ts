@@ -24,6 +24,6 @@ describe('parseNames', () => {
   });
 
   it('returns nothing for whitespace-only input', () => {
-    expect(parseNames(' \n\r\n  ')).toEqual({ people: [], duplicates: [] });
+    expect(parseNames(' \n\r\n  ')).toEqual({ people: [], duplicates: [], overflow: [] });
   });
 });

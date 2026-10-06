@@ -104,4 +104,20 @@ describe('<Invitation>', () => {
     const name = screen.getByText('صاحب السمو الأمير عبدالعزيز بن محمد بن عبدالرحمن');
     expect(parseInt(name.style.fontSize)).toBeLessThan(28);
   });
+
+  it('I7: the place is a tappable link on phones', () => {
+    render(<Invitation view={{ ...base, place: { type: 'online', name: 'Zoom', url: 'https://zoom.example.com/j/1' } }} mode="static" />);
+    expect(screen.getByRole('link', { name: /Zoom/ })).toHaveAttribute('href', 'https://zoom.example.com/j/1');
+  });
+
+  it('M2: a personal guest who already confirmed sees their answer', () => {
+    render(<Invitation view={{ ...base, status: 'confirmed' }} mode="static" />);
+    expect(screen.getByText('تم تأكيد حضورك')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'سأحضر' })).toBeNull();
+  });
+
+  it('M2: a returning public guest sees their earlier answer', () => {
+    render(<Invitation view={{ ...base, kind: 'general', invitee: null }} mode="static" registered registeredName="ريم" initialAnswer="no" />);
+    expect(screen.getByText('شكرًا لإبلاغنا')).toBeInTheDocument();
+  });
 });

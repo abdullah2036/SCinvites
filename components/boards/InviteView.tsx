@@ -167,7 +167,7 @@ export default function InviteView({ v }: { v: any }) {
 {v.placeLabel}
                       </span>
                       <b style={S({ fontSize: "15px", lineHeight: "1.4" })}>
-{v.placeName}
+{v.placeUrl ? <a href={v.placeUrl} target="_blank" rel="noopener noreferrer" style={S({ color: "inherit", textDecorationColor: "rgba(19,112,123,.45)", textUnderlineOffset: "3px" })}>{v.placeName}</a> : v.placeName}
                       </b>
                     </div>
                     {v.qrSvg ? (

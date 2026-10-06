@@ -32,7 +32,7 @@ const TZ = 'Asia/Riyadh';
 function scoped(scope: Scope) {
   return sql`
     select e.* from events e
-    where e.status <> 'archived'
+    where e.status <> 'draft'
       ${scope.eventId ? sql`and e.id = ${scope.eventId}` : sql``}
       ${scope.semesterId ? sql`and exists (select 1 from semesters s where s.id = ${scope.semesterId} and (e.starts_at at time zone ${TZ})::date between s.starts_on and s.ends_on)` : sql``}
       ${scope.outsideSemesters ? sql`and not exists (select 1 from semesters s where (e.starts_at at time zone ${TZ})::date between s.starts_on and s.ends_on)` : sql``}`;

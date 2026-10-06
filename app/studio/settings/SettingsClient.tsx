@@ -60,6 +60,21 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
     }
   }
 
+  async function changeCommittee(l: LeaderListItem) {
+    const committee = prompt(`لجنة ${l.name}`, l.committee)?.trim();
+    if (!committee || committee === l.committee) return;
+    setBusy(l.id);
+    try {
+      await call(`/api/leaders/${l.id}`, 'PATCH', { committee });
+      setLeaders((all) => all.map((x) => (x.id === l.id ? { ...x, committee } : x)));
+      setMsg({ text: 'حُدّثت اللجنة' });
+    } catch (e) {
+      setMsg({ text: (e as Error).message, error: true });
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const pending = leaders.filter((l) => l.status === 'pending');
   const active = leaders.filter((l) => l.status === 'approved');
   const toggles: [keyof Settings['notifications'], string][] = [
@@ -134,6 +149,9 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
       mail: l.email,
       actions: (
         <span style={{ display: 'flex', gap: 6 }}>
+          <button type="button" disabled={busy === l.id} onClick={() => changeCommittee(l)} style={{ ...small, border: '1px solid rgba(19,112,123,.3)', background: 'transparent', color: '#0B3B41' }}>
+            اللجنة
+          </button>
           <button type="button" disabled={busy === l.id} onClick={() => leaderAction(l, 'link')} style={{ ...small, border: 0, background: 'rgba(19,112,123,.12)', color: '#13707B', fontWeight: 700 }}>
             رابط دخول جديد
           </button>

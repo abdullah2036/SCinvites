@@ -18,6 +18,12 @@ export async function runRetention(): Promise<{ anonymized: number }> {
     const invs = await tx`
       update invitations set invitee_name = 'محذوف', invitee_org = null, invitee_title = null, anonymized_at = now()
       where kind = 'personal' and anonymized_at is null and id in (${old}) returning id`;
+    // Names leaders typed into their request batches are guest data too.
+    await tx`
+      update leader_request_people p set name = 'محذوف', org = null, title = null
+      from leader_requests r join templates t on t.id = r.template_id join events e on e.id = t.event_id
+      where p.request_id = r.id and p.name <> 'محذوف'
+        and coalesce(e.ends_at, e.starts_at) < now() - ${retention_days} * interval '1 day'`;
     return regs.length + invs.length;
   });
   if (result) await audit('system', 'retention.run', 'guests', { anonymized: result, retention_days });

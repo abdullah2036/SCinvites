@@ -18,7 +18,7 @@ async function post(url: string, body: unknown) {
   return res.json();
 }
 
-export default function GuestClient({ view, registeredName, src }: { view: GuestView; registeredName: string | null; src: string | null }) {
+export default function GuestClient({ view, registeredName, initialAnswer, src }: { view: GuestView; registeredName: string | null; initialAnswer: 'yes' | 'no' | null; src: string | null }) {
   const [overlay, setOverlay] = useState<string | null>(null);
   const base = `/api/i/${view.slug}`;
 
@@ -36,6 +36,7 @@ export default function GuestClient({ view, registeredName, src }: { view: Guest
           frame="fill"
           registered={!!registeredName}
           registeredName={registeredName ?? undefined}
+          initialAnswer={initialAnswer}
           onOpen={async (input) => {
             await post(`${base}/open`, { ...input, src });
           }}

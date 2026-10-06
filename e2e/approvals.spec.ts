@@ -9,6 +9,9 @@ test('owner excludes one name and approves the rest', async ({ page }) => {
   await loginOwner(page);
   await page.goto(`/${E2E.ownerPath}/approvals`);
   await expect(page.getByRole('heading', { name: /دعوات VIP · ٣/ })).toBeVisible();
+  await expect(page.getByText('المكان: قاعة الطلب')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'https://maps.example.com/request' })).toBeVisible();
+  await expect(page.getByText(/يحمل باركود لهذا الرابط/)).toBeVisible();
   await page.getByRole('button', { name: /أ. عبدالله الغامدي/ }).click();
   await page.getByRole('button', { name: 'اعتماد ٢ أسماء' }).click();
   await expect(page.getByText('اعتُمدت وأُبلغ القائد')).toBeVisible();

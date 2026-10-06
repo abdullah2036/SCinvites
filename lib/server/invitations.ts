@@ -16,14 +16,15 @@ const isUniqueViolation = (e: unknown) => (e as { code?: string })?.code === '23
  */
 export async function createInvitation(
   input: InvitationInputT,
-  opts: { leaderId?: string | null; requestId?: string | null; db?: Db } = {},
+  opts: { leaderId?: string | null; requestId?: string | null; db?: Db; allowSuperseded?: boolean } = {},
 ): Promise<{ id: string; slug: string; url: string }> {
   const db = opts.db ?? sql;
   const [t] = await db<{ status: string; allowed_colors: string[]; stamp_types: string[]; place_type: string; place_name: string | null; place_url: string | null }[]>`
     select t.status, t.allowed_colors, t.stamp_types, e.place_type, e.place_name, e.place_url
     from templates t join events e on e.id = t.event_id where t.id = ${input.templateId}`;
   if (!t) throw new AppError('not_found', 404, 'القالب غير موجود');
-  if (t.status !== 'approved') throw new AppError('template_not_approved', 409, 'القالب غير معتمد');
+  // A leader request made on an older version stays approvable after the template gets a new version.
+  if (t.status !== 'approved' && !(opts.allowSuperseded && t.status === 'superseded')) throw new AppError('template_not_approved', 409, 'القالب غير معتمد');
   if (!t.allowed_colors.includes(input.color)) throw new AppError('color_not_allowed', 400, 'هذا اللون غير متاح لهذا القالب');
   if (input.kind === 'personal' && !t.stamp_types.includes(input.stamp)) throw new AppError('stamp_not_allowed', 400, 'هذا الختم غير متاح لهذا القالب');
   if (input.kind === 'personal' && !input.invitee?.name) throw new AppError('invitee_required', 400, 'اكتبي اسم المدعو');

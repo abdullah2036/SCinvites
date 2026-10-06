@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import { sql } from './db';
 import { audit } from './audit';
 import type { TemplateInput, TemplatePatch } from '@/lib/shared/schemas';
+import { committeeKey } from '@/lib/shared/committees';
 import { AppError, type Color, type TemplateStatus, type Track } from '@/lib/shared/types';
 
 export type TemplateRow = {
@@ -77,6 +78,12 @@ export async function updateTemplate(id: string, patch: z.infer<typeof TemplateP
     const [row] = await sql<TemplateRow[]>`update templates set ${sql(m)} where id = ${id} returning *`;
     return row;
   }
+  // Reuse the open draft of this template if there is one, so there is only ever one next version.
+  const [draft] = await sql<TemplateRow[]>`select * from templates where supersedes_id = ${t.id} and status = 'draft'`;
+  if (draft) {
+    const [row] = await sql<TemplateRow[]>`update templates set ${sql(merged(draft, patch))} where id = ${draft.id} returning *`;
+    return row;
+  }
   const [row] = await sql<TemplateRow[]>`
     insert into templates ${sql({ ...m, event_id: t.event_id, version: t.version + 1, supersedes_id: t.id, status: 'draft' })}
     returning *`;
@@ -101,14 +108,28 @@ export async function listTemplates(): Promise<TemplateWithEvent[]> {
 }
 
 export async function templatesVisibleToLeader(leader: { committee: string }, now = new Date()): Promise<TemplateWithEvent[]> {
-  return sql<TemplateWithEvent[]>`
+  const rows = await sql<TemplateWithEvent[]>`
     ${withEvent()}
     where t.status = 'approved'
       and (t.available_from is null or t.available_from <= ${now})
       and (t.available_to is null or t.available_to >= ${now})
-      and (cardinality(t.allowed_committees) = 0 or ${leader.committee} = any(t.allowed_committees))
       and e.status = 'active'
     order by e.starts_at asc`;
+  // Committee names are typed by people: compare normalized keys (prefix, spacing, letter forms).
+  const mine = committeeKey(leader.committee);
+  return rows.filter((t) => t.allowed_committees.length === 0 || t.allowed_committees.some((c) => committeeKey(c) === mine));
+}
+
+/** The currently approved version descending from a template (itself if still approved), or null. */
+export async function currentVersionOf(templateId: string): Promise<string | null> {
+  const [row] = await sql<{ id: string }[]>`
+    with recursive line as (
+      select id, status, version from templates where id = ${templateId}
+      union all
+      select t.id, t.status, t.version from templates t join line l on t.supersedes_id = l.id
+    )
+    select id from line where status = 'approved' order by version desc limit 1`;
+  return row?.id ?? null;
 }
 
 /** Approved templates; `upcoming` keeps events that have not ended (with a day of grace). */

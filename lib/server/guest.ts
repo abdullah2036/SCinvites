@@ -145,11 +145,16 @@ export async function getIcsData(slug: string) {
   };
 }
 
-/** Name of a registration made on this invitation (returning guest with the sc_reg_<slug> cookie), else null. */
-export async function getRegistrationName(slug: string, registrationId: string | null | undefined): Promise<string | null> {
+/** A returning general guest (sc_reg_<slug> cookie): their name and earlier answer, or null. */
+export async function getRegistration(slug: string, registrationId: string | null | undefined): Promise<{ name: string; answer: 'yes' | 'no' | null } | null> {
   if (!registrationId || !/^[0-9a-f-]{36}$/.test(registrationId)) return null;
-  const [row] = await sql<{ name: string }[]>`
-    select r.name from registrations r join invitations i on i.id = r.invitation_id
+  const [row] = await sql<{ name: string; answer: 'yes' | 'no' | null }[]>`
+    select r.name, v.answer from registrations r join invitations i on i.id = r.invitation_id
+    left join rsvps v on v.registration_id = r.id
     where r.id = ${registrationId} and i.slug = ${slug} and r.anonymized_at is null`;
-  return row?.name ?? null;
+  return row ?? null;
+}
+
+export async function getRegistrationName(slug: string, registrationId: string | null | undefined): Promise<string | null> {
+  return (await getRegistration(slug, registrationId))?.name ?? null;
 }

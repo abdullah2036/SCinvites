@@ -88,7 +88,7 @@ export default function CreateForm({
 
   const gen = !leader && aud === 1;
   const multi = !gen && cnt === 1;
-  const { people, duplicates } = useMemo(() => parseNames(bulk), [bulk]);
+  const { people, duplicates, overflow } = useMemo(() => parseNames(bulk), [bulk]);
   const placeType = PLACE_TYPES[placeIdx];
   const bump = () => setN((x) => x + 1);
 
@@ -279,8 +279,9 @@ export default function CreateForm({
     onPlaceUrl: (e: React.ChangeEvent<HTMLInputElement>) => setPlaceUrl(e.target.value),
     onCustomSlug: (e: React.ChangeEvent<HTMLInputElement>) => setCustomSlug(e.target.value.toLowerCase()),
     people,
-    peopleCount: `${people.length.toLocaleString('ar-SA')} مدعوين، كل واحد له دعوة باسمه${duplicates.length ? ` · مكرر: ${duplicates.join('، ')}` : ''}`,
+    peopleCount: `${people.length.toLocaleString('ar-SA')} مدعوين، كل واحد له دعوة باسمه${duplicates.length ? ` · مكرر: ${duplicates.join('، ')}` : ''}${overflow.length ? ` · أكثر من ٣ خانات في: ${overflow.join(' | ')} (الاسم — الجهة — المسمى)` : ''}`,
     places: opt(['بدون', 'حضوري', 'عن بعد'], placeIdx, setPlaceIdx),
+    placeName: place.name ?? (placeType === 'none' ? 'بدون' : '—'),
     inPerson: placeType === 'in_person',
     online: placeType === 'online',
     hasPlace: placeType !== 'none',

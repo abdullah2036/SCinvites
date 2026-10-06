@@ -39,6 +39,7 @@ test('full leader flow: access request → approval → one-time login → names
   for (let i = 0; i < 3 && !(await page.locator('#bulk').isVisible()); i++) await page.getByRole('button', { name: /التالي/ }).click();
   await page.locator('#bulk').fill('د. هالة البيشي — جامعة الملك عبدالعزيز\nأ. عبدالله الغامدي\nم. ريم العمري — أرامكو');
   while (await page.getByRole('button', { name: /التالي/ }).isVisible()) await page.getByRole('button', { name: /التالي/ }).click();
+  await expect(page.getByText(/القاعة/).first()).toBeVisible();
   await page.getByRole('button', { name: 'إرسال للاعتماد' }).click();
   await expect(page.getByText(/أرسلت ٣ أسماء/)).toBeVisible();
 

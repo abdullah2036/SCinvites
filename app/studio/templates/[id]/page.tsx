@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { requireOwnerFromCookies } from '@/lib/server/page-auth';
 import { notFound } from 'next/navigation';
 import { getTemplate } from '@/lib/server/templates';
 import { listEvents } from '@/lib/server/events';
@@ -10,6 +11,7 @@ export const metadata: Metadata = { title: 'إعداد قالب — منصة ا�
 const iso = (d: Date | null) => (d ? new Date(d).toISOString() : null);
 
 export default async function TemplatePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ event?: string }> }) {
+  await requireOwnerFromCookies();
   const { id } = await params;
   const events = (await listEvents()).filter((e) => e.status !== 'archived');
   const choices = events.map((e) => ({

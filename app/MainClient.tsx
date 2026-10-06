@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import MainView from '@/components/boards/MainView';
 
-const COMMITTEES = ['لجنة العلاقات', 'لجنة الفعاليات', 'قسم الإعلام', 'لجنة التطوير', 'اللجنة العلمية', 'اللجنة الرياضية'];
+import { COMMITTEES } from '@/lib/shared/committees';
 
 async function postJson(url: string, body: unknown) {
   const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);

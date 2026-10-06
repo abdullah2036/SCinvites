@@ -4,6 +4,8 @@ import { useRef, useState } from 'react';
 import TemplateView from '@/components/boards/TemplateView';
 import Invitation from '@/components/invitation/Invitation';
 import { PALETTE, TRACK_INFO, paletteVars } from '@/components/invitation/palette';
+import { riyadhDay } from '@/lib/shared/dates';
+import { COMMITTEES, committeeKey } from '@/lib/shared/committees';
 import { TRACKS, COLORS, STAMPS, type Color, type Track, type GuestView, type PlaceType } from '@/lib/shared/types';
 
 export type TemplateDraft = {
@@ -26,7 +28,7 @@ export type EventChoice = { id: string; title: string; subtitle: string | null; 
 
 const field: React.CSSProperties = { height: 44, borderRadius: 999, padding: '0 14px', border: '1px solid rgba(255,255,255,.95)', background: 'rgba(255,255,255,.78)', color: '#18292C', fontSize: 14, width: '100%', boxSizing: 'border-box' };
 const label: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: '#3E5456' };
-const toDay = (iso: string | null) => (iso ? iso.slice(0, 10) : '');
+const toDay = (iso: string | null) => riyadhDay(iso);
 const fromDay = (d: string, endOfDay = false) => (d ? new Date(`${d}T${endOfDay ? '23:59:59' : '00:00:00'}+03:00`).toISOString() : null);
 
 async function call(url: string, method: string, body?: unknown) {
@@ -221,10 +223,31 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
             ))}
           </select>
         </label>
-        <label style={label}>
-          اللجان المسموح لها
-          <input value={committees} onChange={(e) => (setCommittees(e.target.value), setSaved(false))} placeholder="فارغ = كل اللجان" className="field" style={field} />
-        </label>
+        <div style={label}>
+          اللجان المسموح لها (بدون اختيار = كل اللجان)
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {COMMITTEES.map((c) => {
+              const list = committees.split(/[،,\n]/).map((x) => x.trim()).filter(Boolean);
+              const on = list.some((x) => committeeKey(x) === committeeKey(c));
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    const next = on ? list.filter((x) => committeeKey(x) !== committeeKey(c)) : [...list, c];
+                    setCommittees(next.join('، '));
+                    setSaved(false);
+                  }}
+                  style={chip(on)}
+                >
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+          <input aria-label="اللجان المسموح لها" value={committees} onChange={(e) => (setCommittees(e.target.value), setSaved(false))} placeholder="أو اكتبيها مفصولة بفاصلة" className="field" style={field} />
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <label style={label}>
             متاح من
