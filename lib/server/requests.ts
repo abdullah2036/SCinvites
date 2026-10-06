@@ -179,6 +179,6 @@ export async function listPendingRequests(): Promise<PendingRequest[]> {
     color: r.color,
     stamp: r.stamp,
     place: { type: r.place_type, name: r.place_name, url: r.place_url },
-    people: people.filter((p) => p.request_id === r.id).map(({ request_id: _r, ...p }) => p),
+    people: people.filter((p) => p.request_id === r.id).map((p) => ({ id: p.id, name: p.name, org: p.org, title: p.title })),
   }));
 }
