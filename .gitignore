@@ -4,7 +4,8 @@ node_modules/
 .env.local
 .env*.local
 *.log
-.pglite/
+.pgdata/
+.pgtest/
 coverage/
 playwright-report/
 test-results/
