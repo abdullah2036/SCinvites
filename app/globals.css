@@ -1,0 +1,22 @@
+@import "../styles/tokens.css";
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  min-height: 100dvh;
+  background: var(--page-bg);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--teal-600); }
+a:hover { color: var(--teal-800); }
+button, input, select, textarea { font: inherit; color: inherit; }
+input[dir="ltr"] { text-align: left; }
+.display { font-family: var(--font-display), serif; font-weight: 700; }
+html.paused *, html.paused *::before, html.paused *::after { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

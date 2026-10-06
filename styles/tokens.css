@@ -1,0 +1,19 @@
+:root {
+  /* المنصة */
+  --teal-100: #EEF6F6; --teal-300: #A9D4D5; --turq: #6FB7B8;
+  --teal-600: #13707B; --teal-800: #0B3B41; --ink: #18292C;
+  --ivory: #F4F2EC; --gold: #C99A2E; --gold-dark: #8E6C1F;
+  --radius-card: 26px; --radius-pill: 999px;
+  --glass: rgba(255,255,255,.52);
+  --glass-blur: 26px; /* 14px تحت 760px */
+  --glass-border: rgba(255,255,255,.8);
+  --shadow: 0 24px 60px rgba(19,112,123,.12);
+  --page-bg: radial-gradient(55% 45% at 88% 6%, #BFE3E3 0%, transparent 70%),
+             radial-gradient(45% 40% at 6% 96%, #F2E1B4 0%, transparent 70%),
+             radial-gradient(60% 55% at 45% 55%, #DCEFEE 0%, #EAF3F0 55%, #F4F2EC 100%);
+}
+@media (max-width: 760px) { :root { --glass-blur: 14px; } }
+/* ألوان الدعوات الثلاثة: تُطبق على حاوية الدعوة */
+.c-petrol { --c1:#7FD0D4; --c2:#E7C873; --tx:#FFFFFF; --sc:#072A2F; }
+.c-night  { --c1:#9FDCE0; --c2:#E7C873; --tx:#FFFFFF; --sc:#050F17; }
+.c-ivory  { --c1:#13707B; --c2:#C99A2E; --tx:#0B3B41; --sc:#F4F1EA; }

@@ -9,3 +9,12 @@ coverage/
 playwright-report/
 test-results/
 .vercel/
+.superpowers/
+.pnp
+.pnp.*
+.DS_Store
+*.pem
+*.tsbuildinfo
+next-env.d.ts
+/out/
+!.env.example
