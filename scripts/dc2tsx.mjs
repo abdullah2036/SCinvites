@@ -7,7 +7,7 @@ import path from 'node:path';
 import { parseDocument } from 'htmlparser2';
 
 const BLOBS = {
-  '3116591475c08f5af7797bb71147350b': '/brand/logo.png',
+  '3116591475c08f5af7797bb71147350b': '/brand/logo-128.png',
 };
 
 const ATTR_MAP = {

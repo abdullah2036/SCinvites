@@ -114,6 +114,7 @@ export default function Invitation({ view, mode: requestedMode, frame = 'fill', 
 
   const v = {
     ...flags,
+    track: view.track,
     rootRef,
     phase,
     frameW: frame === 'device' ? '390px' : '100%',

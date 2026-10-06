@@ -40,7 +40,7 @@ export default function LeaderAuthClient({ token }: { token: string }) {
           textAlign: 'center',
         }}
       >
-        <Image src="/brand/logo.png" alt="شعار ملتقى المستجدين" width={56} height={56} style={{ objectFit: 'contain' }} priority />
+        <Image src="/brand/logo-128.png" alt="شعار ملتقى المستجدين" width={56} height={56} style={{ objectFit: 'contain' }} priority />
         <h1 className="display" style={{ fontSize: 28, margin: '12px 0 6px', color: 'var(--teal-800)' }}>
           دخول القادة
         </h1>
