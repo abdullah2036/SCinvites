@@ -69,3 +69,17 @@ export const InvitationBatchInput = z.object({
   place: PlaceInput.nullish(),
   showQr: z.boolean().default(true),
 });
+
+export const RequestInputSchema = z.object({
+  templateId: z.uuid(),
+  stamp: text(1, 24),
+  color: z.enum(COLORS),
+  place: PlaceInput.nullish(),
+  showQr: z.boolean().default(true),
+  people: z.array(z.object({ name: text(1, 80), org: optText(120), title: optText(80) })).min(1).max(200),
+});
+
+export const DecideInput = z.discriminatedUnion('decision', [
+  z.object({ decision: z.literal('approve'), excludedPersonIds: z.array(z.uuid()).default([]) }),
+  z.object({ decision: z.literal('changes_requested'), note: text(2, 500) }),
+]);
