@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { sql } from '@/lib/server/db';
 import { createSession, OWNER_COOKIE } from '@/lib/server/sessions';
-import { createInvitation, revokeInvitation, sendTestCopy, listInvitations } from '@/lib/server/invitations';
+import { createInvitation, createInvitationBatch, revokeInvitation, sendTestCopy, listInvitations } from '@/lib/server/invitations';
 import { outbox } from '@/lib/server/email';
 import { POST as postInvitation } from '@/app/api/invitations/route';
 import { resetDb, makeEvent, makeTemplate } from '../setup/db';
@@ -87,6 +87,16 @@ describe('owner invitations', () => {
     expect(await listInvitations({})).toHaveLength(2);
     expect((await listInvitations({ q: 'سارة' })).map((i) => i.inviteeName)).toEqual(['سارة الغامدي']);
     expect((await listInvitations({ status: 'revoked' })).map((i) => i.id)).toEqual([b.id]);
+  });
+
+  it('creates one personal invitation per person in a batch, atomically', async () => {
+    const people = [{ name: 'أ. نورة', org: null, title: null }, { name: 'م. سلمان', org: 'الجمعية الفلكية', title: null }];
+    const r = await createInvitationBatch({ templateId, color: 'night', stamp: 'VIP', people, showQr: true } as never);
+    expect(r.map((x) => x.name)).toEqual(['أ. نورة', 'م. سلمان']);
+    expect(new Set(r.map((x) => x.slug)).size).toBe(2);
+    await expect(createInvitationBatch({ templateId, color: 'ivory', stamp: 'VIP', people, showQr: true } as never)).rejects.toMatchObject({ code: 'color_not_allowed' });
+    const [{ n }] = await sql`select count(*)::int as n from invitations`;
+    expect(n).toBe(2);
   });
 
   it('the API requires the owner', async () => {

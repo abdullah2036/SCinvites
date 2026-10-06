@@ -10,6 +10,14 @@ const BLOBS = {
   '3116591475c08f5af7797bb71147350b': '/brand/logo-128.png',
 };
 
+// Links between boards → real routes. Studio routes hang off v.base (the secret owner path, passed from the server).
+const ROUTES = {
+  "Dashboard.dc.html": "{{ base }}", "Events.dc.html": "{{ base }}/events", "Invitations.dc.html": "{{ base }}/invitations",
+  "Templates.dc.html": "{{ base }}/templates", "Template.dc.html": "{{ base }}/templates/new", "DashboardDark.dc.html": "{{ base }}/approvals",
+  "Settings.dc.html": "{{ base }}/settings", "Create.dc.html": "{{ base }}/create", "Analytics.dc.html": "{{ base }}/analytics",
+  "Leader.dc.html": "/leader", "Main.dc.html": "/", "Invite.dc.html": "#",
+};
+
 const ATTR_MAP = {
   class: 'className', for: 'htmlFor', tabindex: 'tabIndex', readonly: 'readOnly', maxlength: 'maxLength',
   autocomplete: 'autoComplete', spellcheck: 'spellCheck', colspan: 'colSpan', rowspan: 'rowSpan',
@@ -115,12 +123,14 @@ function emit(node, scope, ind) {
     const n = attrName(rawName);
     if (rawName === 'style') { attrs.push(`style=${styleExpr(rawVal, ref)}`); continue; }
     let val = rawVal;
+    if (rawName === 'href' && ROUTES[val]) val = ROUTES[val];
     if (rawName === 'src') {
       const blob = val.match(/\/_blob\/([0-9a-f]{32})/);
       if (blob) val = BLOBS[blob[1]] ?? '{{ artworkUrl }}';
     }
     if (val === '' && (rawName === 'class' || rawName === 'style')) continue;
     if (val === '' && !['value', 'alt', 'placeholder'].includes(rawName)) { attrs.push(n); continue; }
+    if (['rows', 'cols', 'tabIndex', 'colSpan', 'rowSpan', 'maxLength'].includes(n) && /^d+$/.test(val)) { attrs.push(`${n}={${val}}`); continue; }
     const expr = valueExpr(val, ref);
     attrs.push(expr.startsWith('"') ? `${n}=${expr}` : `${n}={${expr}}`);
   }

@@ -98,3 +98,21 @@ export async function listInvitations(filter: { q?: string; status?: InvitationS
     limit ${filter.limit ?? 500}`;
   return rows.map((r) => ({ ...r, createdAt: new Date(r.createdAt).toISOString(), url: invitationUrl(r.slug) }));
 }
+
+export type BatchInput = Omit<InvitationInputT, 'kind' | 'invitee' | 'customSlug'> & {
+  people: { name: string; org?: string | null; title?: string | null }[];
+};
+
+/** Owner "several invitees": one personal invitation per person, all-or-nothing. */
+export async function createInvitationBatch(input: BatchInput): Promise<{ id: string; slug: string; url: string; name: string }[]> {
+  if (!input.people.length || input.people.length > 200) throw new AppError('invalid_input', 400, 'أضيفي من ١ إلى ٢٠٠ اسم');
+  return sql.begin(async (tx) => {
+    const out: { id: string; slug: string; url: string; name: string }[] = [];
+    for (const p of input.people) {
+      const r = await createInvitation({ ...input, kind: 'personal', invitee: p, customSlug: null }, { db: tx as never });
+      out.push({ ...r, name: p.name });
+    }
+    await audit('owner', 'invitation.batch', input.templateId, { count: out.length }, tx as never);
+    return out;
+  }) as Promise<{ id: string; slug: string; url: string; name: string }[]>;
+}

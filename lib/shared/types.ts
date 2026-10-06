@@ -1,5 +1,7 @@
 export const TRACKS = ['club', 'space', 'chem', 'phys', 'bio', 'math', 'sport'] as const;
 export const COLORS = ['petrol', 'night', 'ivory'] as const;
+/** Stamp types drawn in the design (Create board); «عضو» is used on public invitations. */
+export const STAMPS = ['VIP', 'ضيف', 'متحدث', 'شريك', 'عضو'] as const;
 export type Track = (typeof TRACKS)[number];
 export type Color = (typeof COLORS)[number];
 export type InvitationKind = 'personal' | 'general';

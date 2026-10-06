@@ -21,3 +21,11 @@ export async function seedInvitations() {
     (${t.id}, 'ivory', 'VIP', 'personal', 'ضيف ملغى', 'revokedinvite001', 'revoked', now())`;
   return { eventId: ev.id, templateId: t.id };
 }
+
+import type { Page } from '@playwright/test';
+
+/** Logs the browser context in as the owner (cookie set by the real login API). */
+export async function loginOwner(page: Page) {
+  const res = await page.request.post('/api/owner/login', { data: { password: E2E.ownerPassword }, headers: { origin: E2E.baseURL } });
+  if (!res.ok()) throw new Error(`owner login failed: ${res.status()}`);
+}

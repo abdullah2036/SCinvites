@@ -1,7 +1,7 @@
 import { handler, json, readJson } from '@/lib/server/http';
 import { requireOwner } from '@/lib/server/sessions';
-import { createInvitation, listInvitations } from '@/lib/server/invitations';
-import { InvitationInput } from '@/lib/shared/schemas';
+import { createInvitation, createInvitationBatch, listInvitations } from '@/lib/server/invitations';
+import { InvitationBatchInput, InvitationInput } from '@/lib/shared/schemas';
 import type { InvitationKind, InvitationStatus } from '@/lib/shared/types';
 
 const STATUSES = ['created', 'opened', 'confirmed', 'declined', 'revoked'];
@@ -21,7 +21,10 @@ export const GET = handler(async (req) => {
   );
 });
 
+/** Body with `people: [...]` creates a batch of personal invitations; otherwise one invitation. */
 export const POST = handler(async (req) => {
   await requireOwner(req);
-  return json(await createInvitation(InvitationInput.parse(await readJson(req))), { status: 201 });
+  const body = (await readJson(req)) as Record<string, unknown>;
+  if (Array.isArray(body?.people)) return json({ items: await createInvitationBatch(InvitationBatchInput.parse(body)) }, { status: 201 });
+  return json(await createInvitation(InvitationInput.parse(body)), { status: 201 });
 });

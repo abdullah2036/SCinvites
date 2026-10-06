@@ -41,6 +41,8 @@ export async function startLocalPostgres(opts: { dataDir: string; port?: number;
     password: 'postgres',
     port,
     persistent: opts.persistent,
+    // Match Supabase: UTF-8 regardless of the OS locale (Windows would otherwise pick e.g. WIN1256).
+    initdbFlags: ['--encoding=UTF8', '--locale=C', '--lc-collate=C', '--lc-ctype=C'],
     onLog: () => {},
     onError: (e: unknown) => console.error('[postgres]', e),
   });

@@ -1,6 +1,8 @@
 import { sql } from './db';
 
 export type Settings = {
+  owner_name: string;
+  owner_title: string;
   owner_email: string | null;
   notifications: { leaderRequests: boolean; invitationRequests: boolean };
   retention_days: number;
@@ -9,6 +11,8 @@ export type Settings = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
+  owner_name: 'صاحبة المنصة',
+  owner_title: 'نادي العلوم',
   owner_email: null,
   notifications: { leaderRequests: true, invitationRequests: true },
   retention_days: 90,

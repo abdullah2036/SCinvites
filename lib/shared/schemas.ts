@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TRACKS, COLORS } from './types';
+import { TRACKS, COLORS, STAMPS } from './types';
 
 const text = (min: number, max: number) => z.string().trim().min(min).max(max);
 const optText = (max: number) =>
@@ -39,7 +39,7 @@ export const TemplateInput = z.object({
   track: z.enum(TRACKS),
   allowedColors: z.array(z.enum(COLORS)).min(1),
   artworkPath: optText(200),
-  stampTypes: z.array(text(1, 24)).min(1).max(8),
+  stampTypes: z.array(z.enum(STAMPS)).min(1).max(STAMPS.length),
   allowedCommittees: z.array(text(1, 60)).max(20).default([]),
   availableFrom: z.iso.datetime({ offset: true }).nullish(),
   availableTo: z.iso.datetime({ offset: true }).nullish(),
@@ -60,3 +60,12 @@ export const InvitationInput = z.object({
   showQr: z.boolean().default(true),
 });
 export type InvitationInputT = z.infer<typeof InvitationInput>;
+
+export const InvitationBatchInput = z.object({
+  templateId: z.uuid(),
+  color: z.enum(COLORS),
+  stamp: text(1, 24),
+  people: z.array(z.object({ name: text(1, 80), org: optText(120), title: optText(80) })).min(1).max(200),
+  place: PlaceInput.nullish(),
+  showQr: z.boolean().default(true),
+});

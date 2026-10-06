@@ -10,6 +10,13 @@ describe('schema', () => {
     expect(await runMigrations(sql)).toEqual([]);
   });
 
+  it('stores Arabic text and Arabic-Indic digits (UTF-8 like Supabase)', async () => {
+    const [{ enc }] = await sql<{ enc: string }[]>`select current_setting('server_encoding') as enc`;
+    expect(enc).toBe('UTF8');
+    const [{ v }] = await sql<{ v: string }[]>`select ${'الفصل الأول ١٤٤٨ · ✦'}::text as v`;
+    expect(v).toBe('الفصل الأول ١٤٤٨ · ✦');
+  });
+
   it('enables RLS with no policies on every app table', async () => {
     const tables = await sql<{ relname: string; relrowsecurity: boolean }[]>`
       select c.relname, c.relrowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace
