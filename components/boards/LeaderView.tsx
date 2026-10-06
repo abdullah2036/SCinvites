@@ -24,7 +24,7 @@ export default function LeaderView({ v }: { v: any }) {
               </svg>
             </button>
           </div>
-          <a href={`${v.base}/create`} style={S({ height: "50px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", borderRadius: "999px", background: "#C99A2E", color: "#0B2B30", textDecoration: "none", fontWeight: "700", fontSize: "15px", boxShadow: "0 10px 24px rgba(201,154,46,.35)" })}>
+          <a href={v.createHref} style={S({ height: "50px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", borderRadius: "999px", background: "#C99A2E", color: "#0B2B30", textDecoration: "none", fontWeight: "700", fontSize: "15px", boxShadow: "0 10px 24px rgba(201,154,46,.35)" })}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B2B30" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
               <path d="M12 5v14M5 12h14" />
             </svg>
@@ -41,14 +41,14 @@ export default function LeaderView({ v }: { v: any }) {
               </svg>
 الرئيسية
             </a>
-            <a href="/leader" className="nav" style={S({ position: "relative", display: "flex", alignItems: "center", gap: "12px", height: "44px", padding: "0 12px", borderRadius: "14px", textDecoration: "none", fontSize: "15px", color: "#2C4245" })}>
+            <a href="#mine" className="nav" style={S({ position: "relative", display: "flex", alignItems: "center", gap: "12px", height: "44px", padding: "0 12px", borderRadius: "14px", textDecoration: "none", fontSize: "15px", color: "#2C4245" })}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
                 <rect x="3" y="5" width="18" height="14" rx="2" />
                 <path d="M3 7l9 6 9-6" />
               </svg>
 دعواتي
             </a>
-            <a href={`${v.base}/templates`} className="nav" style={S({ position: "relative", display: "flex", alignItems: "center", gap: "12px", height: "44px", padding: "0 12px", borderRadius: "14px", textDecoration: "none", fontSize: "15px", color: "#2C4245" })}>
+            <a href="#templates" className="nav" style={S({ position: "relative", display: "flex", alignItems: "center", gap: "12px", height: "44px", padding: "0 12px", borderRadius: "14px", textDecoration: "none", fontSize: "15px", color: "#2C4245" })}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
                 <rect x="3" y="3" width="8" height="8" rx="1.5" />
                 <rect x="13" y="3" width="8" height="8" rx="1.5" />
@@ -60,7 +60,7 @@ export default function LeaderView({ v }: { v: any }) {
             <span style={S({ fontSize: "11px", color: "#5B6E70", padding: "16px 12px 6px" })}>
 الحساب
             </span>
-            <a href={`${v.base}/settings`} className="nav" style={S({ position: "relative", display: "flex", alignItems: "center", gap: "12px", height: "44px", padding: "0 12px", borderRadius: "14px", textDecoration: "none", fontSize: "15px", color: "#2C4245" })}>
+            <a href="#account" className="nav" style={S({ position: "relative", display: "flex", alignItems: "center", gap: "12px", height: "44px", padding: "0 12px", borderRadius: "14px", textDecoration: "none", fontSize: "15px", color: "#2C4245" })}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
@@ -70,14 +70,14 @@ export default function LeaderView({ v }: { v: any }) {
           </div>
           <div style={S({ marginTop: "auto", display: "flex", alignItems: "center", gap: "10px", padding: "10px", borderRadius: "18px", background: "rgba(255,255,255,.6)" })}>
             <span style={S({ width: "40px", height: "40px", borderRadius: "50%", background: "linear-gradient(135deg,#13707B,#6FB7B8)", color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "TD, serif", fontSize: "18px" })}>
-خ
+{v.initial}
             </span>
             <div style={S({ display: "flex", flexDirection: "column" })}>
               <span style={S({ fontWeight: "700", fontSize: "14px" })}>
-م. خالد الحربي
+{v.name}
               </span>
               <span style={S({ fontSize: "12px", color: "#4F6567" })}>
-قائد · لجنة العلاقات
+{v.roleLine}
               </span>
             </div>
           </div>
@@ -89,14 +89,14 @@ export default function LeaderView({ v }: { v: any }) {
             </svg>
 الرئيسية
           </a>
-          <a href="/leader" aria-label="دعواتي" style={S({ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", fontSize: "11px", textDecoration: "none", color: "#4F6567" })}>
+          <a href="#mine" aria-label="دعواتي" style={S({ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", fontSize: "11px", textDecoration: "none", color: "#4F6567" })}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
               <rect x="3" y="5" width="18" height="14" rx="2" />
               <path d="M3 7l9 6 9-6" />
             </svg>
 دعواتي
           </a>
-          <a href={`${v.base}/templates`} aria-label="القوالب المعتمدة" style={S({ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", fontSize: "11px", textDecoration: "none", color: "#4F6567" })}>
+          <a href="#templates" aria-label="القوالب المعتمدة" style={S({ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", fontSize: "11px", textDecoration: "none", color: "#4F6567" })}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
               <rect x="3" y="3" width="8" height="8" rx="1.5" />
               <rect x="13" y="3" width="8" height="8" rx="1.5" />
@@ -105,12 +105,12 @@ export default function LeaderView({ v }: { v: any }) {
             </svg>
 القوالب المعتمدة
           </a>
-          <a href={`${v.base}/create`} aria-label="إنشاء دعوة" style={S({ width: "52px", height: "52px", borderRadius: "50%", background: "#C99A2E", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 20px rgba(201,154,46,.4)" })}>
+          <a href={v.createHref} aria-label="إنشاء دعوة" style={S({ width: "52px", height: "52px", borderRadius: "50%", background: "#C99A2E", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 20px rgba(201,154,46,.4)" })}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B2B30" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
               <path d="M12 5v14M5 12h14" />
             </svg>
           </a>
-          <a href={`${v.base}/settings`} aria-label="حسابي" style={S({ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", fontSize: "11px", textDecoration: "none", color: "#4F6567" })}>
+          <a href="#account" aria-label="حسابي" style={S({ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", fontSize: "11px", textDecoration: "none", color: "#4F6567" })}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
               <circle cx="12" cy="8" r="4" />
               <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
@@ -122,13 +122,13 @@ export default function LeaderView({ v }: { v: any }) {
           <header className="in" style={S({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "20px", flexWrap: "wrap" })}>
             <div style={S({ display: "flex", flexDirection: "column", gap: "6px" })}>
               <h1 className="h1m" style={S({ margin: "0", fontFamily: "TD, serif", fontSize: "42px", lineHeight: "1.1", color: "#0B3B41" })}>
-مرحبًا، خالد
+{v.greeting}
               </h1>
               <p style={S({ margin: "0", fontSize: "16px", color: "#3E5456" })}>
 قوالب معتمدة لك، وطلباتك تُرسل بعد اعتمادها
               </p>
             </div>
-            <a href={`${v.base}/create`} style={S({ height: "50px", padding: "0 22px", display: "inline-flex", alignItems: "center", borderRadius: "999px", background: "#C99A2E", color: "#0B2B30", textDecoration: "none", fontWeight: "700" })}>
+            <a href={v.createHref} style={S({ height: "50px", padding: "0 22px", display: "inline-flex", alignItems: "center", borderRadius: "999px", background: "#C99A2E", color: "#0B2B30", textDecoration: "none", fontWeight: "700" })}>
 طلب دعوات جديدة
             </a>
           </header>
@@ -141,21 +141,21 @@ export default function LeaderView({ v }: { v: any }) {
             </span>
             <div style={S({ flex: "1", display: "flex", flexDirection: "column", gap: "2px" })}>
               <b style={S({ color: "#0B3B41" })}>
-أرسل طلبك قبل الفعالية بثلاثة أيام على الأقل
+{v.deadlineNote}
               </b>
               <span style={S({ fontSize: "13px", color: "#3E5456" })}>
 وتقدر تكتب كل الأسماء دفعة وحدة
               </span>
             </div>
           </div>
-          <section className="in glass" style={S({ borderRadius: "30px", padding: "20px 22px", display: "flex", flexDirection: "column", gap: "12px" })}>
+          <section id="templates" className="in glass" style={S({ borderRadius: "30px", padding: "20px 22px", display: "flex", flexDirection: "column", gap: "12px" })}>
             <h3 style={S({ margin: "0", fontSize: "17px", fontWeight: "700", color: "#0B3B41" })}>
 قوالب معتمدة لك
             </h3>
             <div className="g3" style={S({ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "14px" })}>
               {(v.pubs ?? []).map((p: any, pIndex: number) => (
                 <Fragment key={pIndex}>
-                <a href={`${v.base}/create`} className="lift" style={S({ textDecoration: "none", color: "inherit", borderRadius: "22px", background: "rgba(255,255,255,.6)", padding: "8px", display: "flex", flexDirection: "column", gap: "10px" })}>
+                <a href={p.href} className="lift" style={S({ textDecoration: "none", color: "inherit", borderRadius: "22px", background: "rgba(255,255,255,.6)", padding: "8px", display: "flex", flexDirection: "column", gap: "10px" })}>
                   <span style={S({ height: "110px", borderRadius: "16px", background: p.bg, color: "#FFFFFF", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: "12px", boxSizing: "border-box" })}>
                     <span style={S({ fontSize: "11px", opacity: ".8" })}>
 {p.event}
@@ -177,7 +177,7 @@ export default function LeaderView({ v }: { v: any }) {
               ))}
             </div>
           </section>
-          <section className="in glass" style={S({ borderRadius: "30px", padding: "20px 22px", display: "flex", flexDirection: "column", gap: "6px" })}>
+          <section id="mine" className="in glass" style={S({ borderRadius: "30px", padding: "20px 22px", display: "flex", flexDirection: "column", gap: "6px" })}>
             <h3 style={S({ margin: "0 0 6px", fontSize: "17px", fontWeight: "700", color: "#0B3B41" })}>
 طلباتي
             </h3>
@@ -198,7 +198,7 @@ export default function LeaderView({ v }: { v: any }) {
                 </span>
                 {m.ready ? (
                   <>
-                  <button type="button" onClick={m.send} style={S({ height: "40px", padding: "0 16px", border: "0", borderRadius: "999px", background: "#0B3B41", color: "#FFFFFF", fontFamily: "TS, sans-serif", fontWeight: "700", fontSize: "13px", cursor: "pointer" })}>
+                  <button type="button" onClick={m.send} disabled={m.busy} style={S({ height: "40px", padding: "0 16px", border: "0", borderRadius: "999px", background: "#0B3B41", color: "#FFFFFF", fontFamily: "TS, sans-serif", fontWeight: "700", fontSize: "13px", cursor: "pointer" })}>
 {m.sendLabel}
                   </button>
                   </>
@@ -210,6 +210,7 @@ export default function LeaderView({ v }: { v: any }) {
         </main>
       </div>
     </div>
+    {v.overlay}
     </>
   );
 }

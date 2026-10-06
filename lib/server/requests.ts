@@ -182,3 +182,28 @@ export async function listPendingRequests(): Promise<PendingRequest[]> {
     people: people.filter((p) => p.request_id === r.id).map((p) => ({ id: p.id, name: p.name, org: p.org, title: p.title })),
   }));
 }
+
+export type LeaderRequestDetail = {
+  id: string;
+  status: RequestStatus;
+  note: string | null;
+  templateId: string;
+  color: Color;
+  stamp: string;
+  showQr: boolean;
+  place: { type: PlaceType; name: string | null; url: string | null };
+  people: { name: string; org: string | null; title: string | null }[];
+};
+
+/** A leader's own request with its people (for editing after «طلب تعديل»). */
+export async function getLeaderRequest(leaderId: string, id: string): Promise<LeaderRequestDetail> {
+  const [r] = await sql<{ id: string; leader_id: string; status: RequestStatus; note: string | null; template_id: string; color: Color; stamp: string; show_qr: boolean; place_type: PlaceType; place_name: string | null; place_url: string | null }[]>`
+    select * from leader_requests where id = ${id}`;
+  if (!r || r.leader_id !== leaderId) throw new AppError('forbidden', 403, 'هذا الطلب ليس لك');
+  const people = await sql<{ name: string; org: string | null; title: string | null }[]>`
+    select name, org, title from leader_request_people where request_id = ${id} order by position`;
+  return {
+    id: r.id, status: r.status, note: r.note, templateId: r.template_id, color: r.color, stamp: r.stamp, showQr: r.show_qr,
+    place: { type: r.place_type, name: r.place_name, url: r.place_url }, people,
+  };
+}

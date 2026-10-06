@@ -49,30 +49,34 @@ export default function CreateForm({
   homeHref,
   roleLine,
   initialTemplateId,
+  edit,
 }: {
   mode: Mode;
   templates: TemplateOption[];
   homeHref: string;
   roleLine: string;
   initialTemplateId?: string;
+  /** Leader resubmitting after «طلب تعديل» */
+  edit?: { requestId: string; color: Color; stamp: string; showQr: boolean; place: TemplateOption['place']; peopleText: string; note: string | null };
 }) {
   const leader = mode === 'leader';
   const first = templates.find((t) => t.id === initialTemplateId) ?? templates[0];
   const [templateId, setTemplateId] = useState(first?.id ?? '');
   const tpl = templates.find((t) => t.id === templateId) ?? first;
-  const [color, setColor] = useState<Color>(tpl?.allowedColors[0] ?? 'night');
-  const [stamp, setStamp] = useState<string>(tpl?.stampTypes.find((s) => s !== 'عضو') ?? 'VIP');
+  const [color, setColor] = useState<Color>(edit?.color ?? tpl?.allowedColors[0] ?? 'night');
+  const [stamp, setStamp] = useState<string>(edit?.stamp ?? tpl?.stampTypes.find((s) => s !== 'عضو') ?? 'VIP');
   const [aud, setAud] = useState(0); // 0 personal, 1 general (owner only)
-  const [cnt, setCnt] = useState(0); // 0 single, 1 several
+  const [cnt, setCnt] = useState(edit || leader ? 1 : 0); // 0 single, 1 several
   const [name, setName] = useState('');
   const [org, setOrg] = useState('');
   const [title, setTitle] = useState('');
-  const [bulk, setBulk] = useState('');
+  const [bulk, setBulk] = useState(edit?.peopleText ?? '');
   const [customSlug, setCustomSlug] = useState('');
-  const [placeIdx, setPlaceIdx] = useState(PLACE_TYPES.indexOf(tpl?.place.type ?? 'none'));
-  const [venue, setVenue] = useState(tpl?.place.name ?? '');
-  const [placeUrl, setPlaceUrl] = useState(tpl?.place.url ?? '');
-  const [qr, setQr] = useState(true);
+  const startPlace = edit?.place ?? tpl?.place;
+  const [placeIdx, setPlaceIdx] = useState(PLACE_TYPES.indexOf(startPlace?.type ?? 'none'));
+  const [venue, setVenue] = useState(startPlace?.name ?? '');
+  const [placeUrl, setPlaceUrl] = useState(startPlace?.url ?? '');
+  const [qr, setQr] = useState(edit?.showQr ?? true);
   const [n, setN] = useState(0);
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -126,8 +130,16 @@ export default function CreateForm({
     setErrorMsg('');
     try {
       if (leader) {
-        const r = await postJson('/api/requests', { templateId: tpl!.id, color, stamp, place, showQr: qr, people: multi ? people : [{ name: name.trim(), org: org.trim() || null, title: title.trim() || null }] });
-        setLeaderDoneCount(r.count);
+        const payload = { templateId: tpl!.id, color, stamp, place, showQr: qr, people: multi ? people : [{ name: name.trim(), org: org.trim() || null, title: title.trim() || null }] };
+        if (edit) {
+          const res = await fetch(`/api/requests/${edit.requestId}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => null);
+          const data = await res?.json().catch(() => null);
+          if (!res?.ok) throw new Error(data?.error?.message ?? 'تعذر الإرسال');
+          setLeaderDoneCount(payload.people.length);
+        } else {
+          const r = await postJson('/api/requests', payload);
+          setLeaderDoneCount(r.count);
+        }
         return null;
       }
       const base = { templateId: tpl!.id, color, stamp: gen ? 'عضو' : stamp, place, showQr: qr };
@@ -289,7 +301,7 @@ export default function CreateForm({
         : 'بعد الاعتماد يطلع لك رابط الدعوة جاهز للإرسال',
     roleLine,
     roleDot: leader ? '#6FB7B8' : '#C99A2E',
-    crumb: leader ? 'دعواتي / إنشاء' : 'الدعوات / إنشاء',
+    crumb: leader ? (edit ? `دعواتي / تعديل الطلب${edit.note ? ` · ${edit.note}` : ''}` : 'دعواتي / إنشاء') : 'الدعوات / إنشاء',
     homeHref,
     selfSend,
     selfSent,

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { sql } from '@/lib/server/db';
-import { submitRequest, resubmitRequest, decideRequest, getRequestLinks, listLeaderRequests, listPendingRequests } from '@/lib/server/requests';
+import { submitRequest, resubmitRequest, decideRequest, getRequestLinks, listLeaderRequests, listPendingRequests, getLeaderRequest } from '@/lib/server/requests';
 import * as invitations from '@/lib/server/invitations';
 import { createSession, LEADER_COOKIE, OWNER_COOKIE } from '@/lib/server/sessions';
 import { POST as postRequest } from '@/app/api/requests/route';
@@ -134,6 +134,17 @@ describe('leader requests', () => {
     expect((await decideRoute(makeRequest('POST', `/api/requests/${id}/decide`, { body: { decision: 'approve', excludedPersonIds: [] }, cookies: { [OWNER_COOKIE]: ot } }), ip)).status).toBe(200);
     const links = await linksRoute(makeRequest('GET', `/api/requests/${id}/links`, { cookies: { [LEADER_COOKIE]: lt } }), ip);
     expect((await links.json()).length).toBe(3);
+  });
+
+  it('returns the leader’s own request for editing, never another leader’s', async () => {
+    const { t, leader } = await setup();
+    const other = await makeLeader({ committee: 'لجنة العلاقات' });
+    vi.useFakeTimers({ now: new Date('2026-10-01T00:00:00Z'), toFake: ['Date'] });
+    const { id } = await submitRequest(leader.id, input(t.id));
+    const r = await getLeaderRequest(leader.id, id);
+    expect(r).toMatchObject({ id, templateId: t.id, color: 'night', stamp: 'VIP' });
+    expect(r.people.map((p) => p.name)).toEqual(people.map((p) => p.name));
+    await expect(getLeaderRequest(other.id, id)).rejects.toMatchObject({ status: 403 });
   });
 
   it('notifies the owner of a new request when enabled', async () => {
