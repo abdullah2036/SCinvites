@@ -1,10 +1,12 @@
 // Playwright web server: real local Postgres + migrations, then `next dev` on :3100 with e2e settings.
 import { spawn } from 'node:child_process';
 import bcrypt from 'bcryptjs';
+import { writeFileSync } from 'node:fs';
 import { startLocalPostgres } from '../lib/server/local-pg.ts';
 import { E2E } from './config.ts';
 
-const pg = await startLocalPostgres({ dataDir: '.pge2e', port: E2E.dbPort, persistent: false });
+const pg = await startLocalPostgres({ dataDir: '.pge2e', persistent: false });
+writeFileSync(E2E.dbUrlFile, pg.url);
 const child = spawn('npx', ['next', 'dev', '-p', String(E2E.port)], {
   stdio: 'inherit',
   shell: true,

@@ -16,6 +16,35 @@ export async function freePort(): Promise<number> {
   });
 }
 
+/** A previous run that was killed (e.g. by Playwright) can leave its postmaster running; stop it. */
+async function stopStale(databaseDir: string) {
+  const { readFile } = await import('node:fs/promises');
+  try {
+    const pid = Number((await readFile(path.join(databaseDir, 'postmaster.pid'), 'utf8')).split(/\r?\n/)[0]);
+    if (pid !== 0) {
+      const p = Math.abs(pid); // Windows can record a negative pid
+      if (process.platform === 'win32') {
+        const { execFileSync } = await import('node:child_process');
+        try {
+          execFileSync('taskkill', ['/PID', String(p), '/T', '/F'], { stdio: 'ignore' });
+        } catch {
+          /* already gone */
+        }
+      } else process.kill(p);
+      for (let i = 0; i < 50; i++) {
+        try {
+          process.kill(Math.abs(pid), 0);
+          await new Promise((r) => setTimeout(r, 100));
+        } catch {
+          break;
+        }
+      }
+    }
+  } catch {
+    /* no stale server */
+  }
+}
+
 /** Applies migrations to the database at url. */
 export async function migrateUrl(url: string): Promise<string[]> {
   const sql = postgres(url, { prepare: false, max: 1, onnotice: () => {} });
@@ -34,6 +63,7 @@ export async function startLocalPostgres(opts: { dataDir: string; port?: number;
   const { default: EmbeddedPostgres } = await import('embedded-postgres');
   const port = opts.port ?? (await freePort());
   const databaseDir = path.resolve(opts.dataDir);
+  await stopStale(databaseDir);
   if (!opts.persistent) await rm(databaseDir, { recursive: true, force: true });
   const pg = new EmbeddedPostgres({
     databaseDir,
