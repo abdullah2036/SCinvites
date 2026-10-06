@@ -10,42 +10,44 @@ export default function TemplateView({ v }: { v: any }) {
       <header className="stack" style={S({ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "16px", flexWrap: "wrap" })}>
         <div style={S({ display: "flex", flexDirection: "column", gap: "6px" })}>
           <a href={`${v.base}/templates`} style={S({ fontSize: "13px", textDecoration: "none" })}>
-القوالب / قالب جديد
+{v.crumb}
           </a>
           <h1 className="h1m" style={S({ margin: "0", fontFamily: "TD, serif", fontSize: "38px", color: "#0B3B41" })}>
 إعداد قالب
           </h1>
           <p style={S({ margin: "0", fontSize: "15px", color: "#3E5456" })}>
-اختاري هوية الحركة واللون، وبعد الاعتماد يطلع القالب في المعرض وللقادة
+{v.subtitle}
           </p>
         </div>
         <div style={S({ display: "flex", gap: "10px" })}>
-          <button type="button" style={S({ height: "48px", padding: "0 20px", borderRadius: "999px", border: "1px solid #0B3B41", background: "transparent", color: "#0B3B41", fontFamily: "TS, sans-serif", fontWeight: "700", cursor: "pointer" })}>
-حفظ كمسودة
+          <button type="button" onClick={v.saveDraft} disabled={v.busy} style={S({ height: "48px", padding: "0 20px", borderRadius: "999px", border: "1px solid #0B3B41", background: "transparent", color: "#0B3B41", fontFamily: "TS, sans-serif", fontWeight: "700", cursor: "pointer" })}>
+{v.draftLabel}
           </button>
-          <button type="button" onClick={v.approve} style={S({ height: "48px", padding: "0 22px", borderRadius: "999px", border: "0", background: "#C99A2E", color: "#0B2B30", fontFamily: "TS, sans-serif", fontWeight: "700", cursor: "pointer" })}>
+          <button type="button" onClick={v.approve} disabled={v.busy || v.ok} style={S({ height: "48px", padding: "0 22px", borderRadius: "999px", border: "0", background: "#C99A2E", color: "#0B2B30", fontFamily: "TS, sans-serif", fontWeight: "700", cursor: "pointer" })}>
 {v.approveLabel}
           </button>
         </div>
       </header>
+      {v.notice}
       <div style={S({ position: "relative", display: "flex", flexWrap: "wrap", gap: "26px", alignItems: "flex-start" })}>
         <section style={S({ flex: "1 1 560px", minWidth: "0", display: "flex", flexDirection: "column", gap: "14px" })}>
           <div className="glass" style={S({ borderRadius: "26px", padding: "16px 18px", display: "flex", alignItems: "center", gap: "14px" })}>
-            <img src={v.artworkUrl} alt="" style={S({ width: "48px", height: "84px", objectFit: "cover", borderRadius: "10px" })} />
+            {v.artworkThumb}
             <div style={S({ flex: "1", display: "flex", flexDirection: "column", gap: "3px" })}>
               <span style={S({ fontSize: "13px", fontWeight: "700", color: "#13707B" })}>
 صورة التصميم
               </span>
               <span style={S({ fontWeight: "700", fontSize: "14px", direction: "ltr", textAlign: "right" })}>
-rocket-revolution-vip.jpg
+{v.artworkName}
               </span>
               <span style={S({ fontSize: "12px", color: "#4F6567" })}>
 اختيارية · بدونها نستخدم تصميم المسار الجاهز
               </span>
             </div>
-            <button type="button" style={S({ height: "40px", padding: "0 16px", borderRadius: "999px", border: "1px solid rgba(19,112,123,.35)", background: "rgba(255,255,255,.7)", color: "#0B3B41", fontFamily: "TS, sans-serif", cursor: "pointer" })}>
-استبدال
+            <button type="button" onClick={v.pickArtwork} style={S({ height: "40px", padding: "0 16px", borderRadius: "999px", border: "1px solid rgba(19,112,123,.35)", background: "rgba(255,255,255,.7)", color: "#0B3B41", fontFamily: "TS, sans-serif", cursor: "pointer" })}>
+{v.artworkAction}
             </button>
+            {v.fileInput}
           </div>
           <div className="glass" style={S({ borderRadius: "26px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "12px" })}>
             <span style={S({ fontSize: "13px", fontWeight: "700", color: "#13707B" })}>
@@ -404,12 +406,7 @@ U
               <span style={S({ fontSize: "13px", fontWeight: "700", color: "#13707B" })}>
 إتاحة القالب للقادة
               </span>
-              <span style={S({ fontSize: "13px", color: "#3E5456" })}>
-ثورة الصواريخ · لجنة العلاقات ولجنة الفعاليات
-              </span>
-              <span style={S({ fontSize: "13px", color: "#3E5456" })}>
-متاح من ٥ أكتوبر إلى ٩ أكتوبر · آخر موعد للطلبات قبل الفعالية بثلاثة أيام
-              </span>
+              {v.availability}
             </div>
             <div className="glass" style={S({ borderRadius: "26px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "10px" })}>
               <span style={S({ fontSize: "13px", fontWeight: "700", color: "#13707B" })}>
@@ -430,7 +427,7 @@ U
           <div style={S({ width: "330px", height: "714px", borderRadius: "40px", padding: "7px", boxSizing: "border-box", background: "rgba(255,255,255,.5)", border: "1px solid rgba(255,255,255,.9)", boxShadow: "0 40px 80px rgba(12,22,48,.28)" })}>
             <div style={S({ width: "316px", height: "700px", borderRadius: "34px", overflow: "hidden" })}>
               <div style={S({ width: "390px", height: "844px", transform: "scale(.81)", transformOrigin: "top right" })}>
-                {/* dc-import Invite */}
+                {v.preview}
               </div>
             </div>
           </div>
