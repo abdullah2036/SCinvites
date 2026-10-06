@@ -2,7 +2,7 @@ import { sql } from '@/lib/server/db';
 
 const TABLES = [
   'audit_log', 'rate_limits', 'auth_attempts', 'sessions', 'login_tokens', 'rsvps', 'registrations',
-  'invitations', 'leader_request_people', 'leader_requests', 'leaders', 'templates', 'events', 'settings',
+  'invitations', 'leader_request_people', 'leader_requests', 'leaders', 'templates', 'events', 'settings', 'semesters',
 ];
 
 export async function resetDb(): Promise<void> {
