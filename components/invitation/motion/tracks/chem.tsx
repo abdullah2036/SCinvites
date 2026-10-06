@@ -1,4 +1,3 @@
-/* eslint-disable */
 // chem track — scene and loader, moved verbatim from the Invite board (design-reference/Invite.dc.html).
 import { S } from '@/components/boards/css';
 

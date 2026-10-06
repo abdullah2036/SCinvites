@@ -1,7 +1,7 @@
 'use client';
 
-import { lazy, Suspense, useMemo, type ComponentType } from 'react';
-import type { Track } from '@/lib/shared/types';
+import { createElement, lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react';
+import { TRACKS, type Track } from '@/lib/shared/types';
 
 type TrackModule = { Scene: ComponentType; Loader: ComponentType };
 
@@ -16,26 +16,18 @@ export const TRACK_MODULES: Record<Track, () => Promise<TrackModule>> = {
   sport: () => import('./tracks/sport'),
 };
 
-const cache = new Map<string, ComponentType>();
+type Lazy = LazyExoticComponent<ComponentType>;
+const build = (pick: (m: TrackModule) => ComponentType) =>
+  Object.fromEntries(TRACKS.map((t) => [t, lazy(() => TRACK_MODULES[t]().then((m) => ({ default: pick(m) })))])) as Record<Track, Lazy>;
 
-function component(track: Track, kind: 'scene' | 'loader'): ComponentType {
-  const key = `${track}:${kind}`;
-  let c = cache.get(key);
-  if (!c) {
-    c = lazy(() => TRACK_MODULES[track]().then((m) => ({ default: kind === 'scene' ? m.Scene : m.Loader })));
-    cache.set(key, c);
-  }
-  return c;
-}
+const SCENES = build((m) => m.Scene);
+const LOADERS = build((m) => m.Loader);
 
 /** Colors come from the invitation's --c1/--c2/--sc variables. */
 export default function TrackMotion({ track, kind }: { track: Track; kind: 'scene' | 'loader' }) {
-  const C = useMemo(() => component(track, kind), [track, kind]);
   return (
     <div data-track={track} data-kind={kind} style={{ display: 'contents' }}>
-      <Suspense fallback={null}>
-        <C />
-      </Suspense>
+      <Suspense fallback={null}>{createElement((kind === 'scene' ? SCENES : LOADERS)[track])}</Suspense>
     </div>
   );
 }
