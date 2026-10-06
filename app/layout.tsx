@@ -10,7 +10,8 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html dir="rtl" lang="ar">
+    // suppressHydrationWarning: browser extensions add attributes to <html> before React loads (this element only).
+    <html dir="rtl" lang="ar" suppressHydrationWarning>
       <head>
         <link rel="preload" href="/fonts/thmanyahsans-Regular.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/thmanyahserifdisplay-Bold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
