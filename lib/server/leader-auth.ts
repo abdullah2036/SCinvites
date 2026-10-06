@@ -86,3 +86,12 @@ export async function requireLeader(req: Request): Promise<Session & { leaderId:
   if (!s || !s.leaderId) throw new AppError('unauthorized', 401, 'يلزم تسجيل الدخول');
   return s as Session & { leaderId: string };
 }
+
+export type LeaderListItem = { id: string; name: string; email: string; committee: string; status: LeaderStatus; createdAt: string };
+
+export async function listLeaders(): Promise<LeaderListItem[]> {
+  const rows = await sql<(LeaderListItem & { createdAt: Date })[]>`
+    select id, name, email, committee, status, created_at as "createdAt" from leaders
+    order by case status when 'pending' then 0 when 'approved' then 1 else 2 end, name`;
+  return rows.map((r) => ({ ...r, createdAt: new Date(r.createdAt).toISOString() }));
+}

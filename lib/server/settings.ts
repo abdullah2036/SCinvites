@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { sql } from './db';
 
 export type Settings = {
@@ -28,4 +29,26 @@ export async function getSettings(): Promise<Settings> {
   }
   out.notifications = { ...DEFAULT_SETTINGS.notifications, ...out.notifications };
   return out;
+}
+
+
+const SettingsPatch = z
+  .object({
+    owner_name: z.string().trim().min(2).max(60),
+    owner_title: z.string().trim().min(2).max(80),
+    owner_email: z.email().max(160).nullable(),
+    notifications: z.object({ leaderRequests: z.boolean(), invitationRequests: z.boolean() }),
+    retention_days: z.number().int().min(30).max(365),
+    email_sender_name: z.string().trim().min(2).max(60),
+    email_sender_address: z.email().max(160).nullable(),
+  })
+  .partial()
+  .strict();
+
+/** Validates and upserts only the given keys; returns the full settings. */
+export async function updateSettings(patch: unknown): Promise<Settings> {
+  const p = SettingsPatch.parse(patch);
+  const rows = Object.entries(p).map(([key, value]) => ({ key, value: sql.json(value as never) }));
+  if (rows.length) await sql`insert into settings ${sql(rows)} on conflict (key) do update set value = excluded.value`;
+  return getSettings();
 }
