@@ -8,7 +8,6 @@ import { resetDb, makeEvent, makeTemplate, makeInvitation } from '../setup/db';
 import { makeRequest } from '../setup/request';
 
 const day = 86400_000;
-const p = { params: Promise.resolve({}) };
 
 async function eventWithGuests(daysAgo: number, slug: string) {
   const ev = await makeEvent({ starts_at: new Date(Date.now() - daysAgo * day) });
