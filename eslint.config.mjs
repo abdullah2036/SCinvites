@@ -11,7 +11,7 @@ const eslintConfig = defineConfig([
   },
   {
     // Views generated from the design boards keep the design's plain <img> tags.
-    files: ["components/boards/**", "components/invitation/motion/tracks/**"],
+    files: ["components/boards/**", "components/invitation/motion/tracks/**", "components/invitation/covers/**", "components/invitation/LiveCover.tsx"],
     rules: { "@next/next/no-img-element": "off" },
   },
   globalIgnores([".next/**", ".next-e2e/**", ".pge2e/**", ".uploads/**", "out/**", "build/**", "next-env.d.ts", ".pgdata/**", ".pgtest/**", "design-reference/**", "playwright-report/**", "test-results/**"]),
