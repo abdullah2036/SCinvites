@@ -5,7 +5,17 @@ import { createBackup } from '../lib/server/backup.ts';
 import { closeDb } from '../lib/server/db.ts';
 
 const passphrase = process.env.BACKUP_PASSPHRASE ?? '';
-const file = await createBackup({ passphrase });
+let file: Buffer;
+try {
+  file = await createBackup({ passphrase });
+} catch (e) {
+  const msg = (e as Error).message;
+  console.error(`Backup failed: ${msg}`);
+  if (/ENOTFOUND|ENETUNREACH|EHOSTUNREACH|ETIMEDOUT|ECONNREFUSED/.test(msg)) console.error('Hint: DATABASE_URL must be the Supabase *Session pooler* URL (port 5432), not "Direct connection".');
+  if (/password authentication failed/i.test(msg)) console.error('Hint: wrong database password in DATABASE_URL (reset it in Supabase → Database settings, avoid @ # / in it).');
+  if (/DATABASE_URL is not set|BACKUP_PASSPHRASE/.test(msg)) console.error('Hint: add the DATABASE_URL_DIRECT and BACKUP_PASSPHRASE repository secrets.');
+  process.exit(1);
+}
 mkdirSync('backups', { recursive: true });
 const name = `backups/backup-${new Date().toISOString().replace(/[:.]/g, '-')}.scb`;
 writeFileSync(name, file);

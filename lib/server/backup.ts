@@ -58,13 +58,16 @@ function storage() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, { auth: { persistSession: false } }).storage.from('artwork');
 }
 
-export async function createBackup(opts: { passphrase: string }): Promise<Buffer> {
+export async function createBackup(opts: { passphrase: string }, db: typeof sql = sql): Promise<Buffer> {
   if (!opts.passphrase || opts.passphrase.length < 12) throw new Error('BACKUP_PASSPHRASE must be at least 12 characters');
   const tables: Bundle['tables'] = {};
+  // A brand-new database (first migration run) has no tables yet: back up whatever exists.
+  const existing = new Set((await db<{ t: string }[]>`select tablename as t from pg_tables where schemaname = 'public'`).map((r) => r.t));
   for (const t of TABLES) {
-    tables[t] = await sql.unsafe(`select * from ${t} order by ${ORDER_BY[t] ?? 'created_at, id'}`);
+    if (!existing.has(t)) continue;
+    tables[t] = await db.unsafe(`select * from ${t} order by ${ORDER_BY[t] ?? 'created_at, id'}`);
   }
-  const migrations = (await sql<{ name: string }[]>`select name from schema_migrations order by name`).map((r) => r.name);
+  const migrations = existing.has('schema_migrations') ? (await db<{ name: string }[]>`select name from schema_migrations order by name`).map((r) => r.name) : [];
   const artwork: Bundle['artwork'] = {};
   const bucket = storage();
   if (bucket) {

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { sql } from '@/lib/server/db';
+import postgres from 'postgres';
 import { createBackup, restoreBackup } from '@/lib/server/backup';
 import { resetDb, makeEvent, makeTemplate, makeInvitation, makeLeader } from '../setup/db';
 
@@ -59,5 +60,18 @@ describe('encrypted backup and restore', () => {
     await expect(restoreBackup(file, { passphrase: PASS })).rejects.toThrow(/not empty/);
     await restoreBackup(file, { passphrase: PASS, replace: true });
     expect((await counts()).events).toBe(1);
+  });
+
+  it('succeeds on a brand-new database with no tables yet (first migration run)', async () => {
+    await sql.unsafe('drop database if exists fresh_db');
+    await sql.unsafe('create database fresh_db');
+    const fresh = postgres(process.env.DATABASE_URL!.replace(/\/[^/]*$/, '/fresh_db'), { prepare: false, max: 1, onnotice: () => {} });
+    try {
+      const file = await createBackup({ passphrase: PASS }, fresh as never);
+      expect(file.length).toBeGreaterThan(48);
+    } finally {
+      await fresh.end();
+      await sql.unsafe('drop database if exists fresh_db');
+    }
   });
 });
