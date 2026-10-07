@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseNames } from '@/lib/shared/names';
 import { riyadhDay } from '@/lib/shared/dates';
-import { committeeKey } from '@/lib/shared/committees';
 import { InvitationBatchInput } from '@/lib/shared/schemas';
 
 describe('review fixes (pure)', () => {
@@ -24,11 +23,5 @@ describe('review fixes (pure)', () => {
     expect(riyadhDay('2026-10-09T21:00:00.000Z')).toBe('2026-10-10');
     expect(riyadhDay('2026-10-10T20:59:59.000Z')).toBe('2026-10-10');
     expect(riyadhDay(null)).toBe('');
-  });
-
-  it('I5: committee keys ignore the لجنة/قسم prefix, spacing and alef/taa forms', () => {
-    expect(committeeKey('لجنة  العلاقات ')).toBe(committeeKey('العلاقات'));
-    expect(committeeKey('قسم الإعلام')).toBe(committeeKey('الاعلام'));
-    expect(committeeKey('لجنة الفعاليات')).not.toBe(committeeKey('لجنة العلاقات'));
   });
 });

@@ -48,8 +48,7 @@ export async function makeTemplate(p: Row = {}) {
 export function makeLeader(p: Row = {}) {
   return insert('leaders', {
     name: 'خالد الحربي',
-    email: `leader${uniq()}@uqu.edu.sa`,
-    committee: 'العلاقات',
+    email: `s4${uniq()}@uqu.edu.sa`,
     status: 'approved',
     approved_at: new Date(),
     ...p,

@@ -2,15 +2,12 @@ import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import { sql } from '@/lib/server/db';
 import { updateSettings, getSettings } from '@/lib/server/settings';
-import { approveTemplate, updateTemplate, createTemplate, templatesVisibleToLeader, currentVersionOf } from '@/lib/server/templates';
+import { approveTemplate, updateTemplate, createTemplate, currentVersionOf } from '@/lib/server/templates';
 import { submitRequest, decideRequest } from '@/lib/server/requests';
 import { runRetention } from '@/lib/server/retention';
 import { getAnalytics } from '@/lib/server/analytics';
 import { getRegistration, openInvitation, answerRsvp } from '@/lib/server/guest';
-import { updateLeaderCommittee } from '@/lib/server/leader-auth';
 import { POST as login } from '@/app/api/owner/login/route';
-import { PATCH as patchLeader } from '@/app/api/leaders/[id]/route';
-import { createSession } from '@/lib/server/sessions';
 import { OWNER_COOKIE } from '@/lib/server/sessions';
 import { resetDb, makeEvent, makeTemplate, makeLeader, makeInvitation } from '../setup/db';
 import { makeRequest, readSetCookies } from '../setup/request';
@@ -91,17 +88,6 @@ describe('review fixes', () => {
     expect(pp).toEqual({ name: 'محذوف', org: null, title: null });
   });
 
-  it('I5: committee names match regardless of the «لجنة» prefix and spacing; owner can fix a leader committee', async () => {
-    const ev = await makeEvent();
-    await makeTemplate({ event_id: ev.id, allowed_committees: ['لجنة العلاقات'] });
-    expect(await templatesVisibleToLeader({ committee: 'العلاقات ' })).toHaveLength(1);
-    expect(await templatesVisibleToLeader({ committee: 'لجنة  الفعاليات' })).toHaveLength(0);
-    const l = await makeLeader({ committee: 'علاقات خارجية' });
-    await updateLeaderCommittee(l.id, 'لجنة العلاقات');
-    const [row] = await sql`select committee from leaders where id = ${l.id}`;
-    expect(row.committee).toBe('لجنة العلاقات');
-  });
-
   it('I10: archived events still count in analytics', async () => {
     const ev = await makeEvent({ status: 'archived' });
     const t = await makeTemplate({ event_id: ev.id });
@@ -124,14 +110,5 @@ describe('review fixes', () => {
     const v2 = await approveTemplate((await updateTemplate(v1.id, { stampTypes: ['ضيف'] })).id);
     expect(await currentVersionOf(v1.id)).toBe(v2.id);
     expect(await currentVersionOf(v2.id)).toBe(v2.id);
-  });
-
-  it('I5: only the owner can change a leader committee over HTTP', async () => {
-    const l = await makeLeader();
-    const ip = { params: Promise.resolve({ id: l.id }) };
-    expect((await patchLeader(makeRequest('PATCH', '/api/leaders/x', { body: { committee: 'لجنة الفعاليات' } }), ip)).status).toBe(401);
-    const { token } = await createSession('owner', null, 't');
-    const ok = await patchLeader(makeRequest('PATCH', '/api/leaders/x', { body: { committee: 'لجنة الفعاليات' }, cookies: { [OWNER_COOKIE]: token } }), ip);
-    expect(ok.status).toBe(200);
   });
 });

@@ -13,12 +13,12 @@ test('owner sets up a template, saves it as a draft, then approves and publishes
   await page.getByRole('combobox').first().selectOption({ label: 'تفاعل' });
   await page.getByRole('button', { name: /الكيمياء/ }).first().click();
   await page.getByRole('button', { name: /عاجي/ }).click(); // toggle ivory off
-  await page.getByLabel('اللجان المسموح لها').fill('لجنة العلاقات، لجنة الفعاليات');
+  await expect(page.getByText('بعد الاعتماد يظهر مباشرة لكل القادة المعتمدين')).toBeVisible();
   await page.getByRole('button', { name: 'متحدث', exact: true }).click();
   await page.getByRole('button', { name: 'حفظ كمسودة' }).click();
   await expect(page.getByText('حُفظت المسودة')).toBeVisible();
-  const [draft] = await db`select status, track, allowed_colors, allowed_committees, stamp_types from templates`;
-  expect(draft).toMatchObject({ status: 'draft', track: 'chem', allowed_colors: ['petrol', 'night'], allowed_committees: ['لجنة العلاقات', 'لجنة الفعاليات'] });
+  const [draft] = await db`select status, track, allowed_colors, stamp_types from templates`;
+  expect(draft).toMatchObject({ status: 'draft', track: 'chem', allowed_colors: ['petrol', 'night'] });
   expect(draft.stamp_types).toContain('متحدث');
 
   await page.getByRole('button', { name: 'اعتماد ونشر' }).click();

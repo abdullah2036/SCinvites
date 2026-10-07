@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import LeaderView from '@/components/boards/LeaderView';
 import LogoutButton from '@/components/shell/LogoutButton';
@@ -20,7 +20,7 @@ const STATUS: Record<string, [string, string, string]> = {
 
 type Link = { name: string; org: string | null; url: string };
 
-export default function LeaderClient({ leader, templates, requests }: { leader: { name: string; committee: string }; templates: TemplateOption[]; requests: LeaderRequestItem[] }) {
+export default function LeaderClient({ leader, templates, requests }: { leader: { name: string }; templates: TemplateOption[]; requests: LeaderRequestItem[] }) {
   const router = useRouter();
   const [links, setLinks] = useState<{ title: string; items: Link[] } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -46,15 +46,31 @@ export default function LeaderClient({ leader, templates, requests }: { leader: 
   }
 
   // Without a template there is nothing to create yet: say so plainly instead of leaving dead buttons.
-  const noTemplatesText = `لا توجد قوالب للجنة «${leader.committee}» بعد. عندما تعتمد صاحبة المنصة قالبًا للجنتك يظهر هنا مباشرة وتقدر تنشئ الدعوات`;
+  const noTemplatesText = 'لا توجد قوالب معتمدة بعد. عندما تعتمد صاحبة المنصة قالبًا يظهر هنا مباشرة وتقدر تنشئ الدعوات';
+
+  // The design's menu links are in-page anchors (#mine, #templates, #account). On a short page the browser's jump
+  // lands at the very bottom; instead scroll only when the section is off-screen, and briefly highlight it.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.('a[href^="#"]');
+      const el = a && document.getElementById(a.getAttribute('href')!.slice(1));
+      if (!el) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      if (r.top < 0 || r.top > innerHeight - 80) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.animate?.([{ boxShadow: '0 0 0 3px rgba(201,154,46,.7)' }, { boxShadow: '0 0 0 3px rgba(201,154,46,0)' }], { duration: 1200 });
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, []);
   const first = leader.name.replace(/^(د|أ|م|كابتن)\.?\s*/, '').trim();
   const v = {
     createHref: templates[0] ? `/leader/create/${templates[0].id}` : '#templates',
     initial: first.charAt(0) || 'ق',
     name: leader.name,
-    roleLine: `قائد · ${leader.committee}`,
+    roleLine: 'قائد',
     greeting: `مرحبًا، ${first.split(' ')[0]}`,
-    deadlineNote: templates.length ? 'أرسل طلبك قبل الموعد النهائي لكل قالب' : 'تظهر هنا القوالب بعد أن تعتمدها صاحبة المنصة للجنتك',
+    deadlineNote: templates.length ? 'أرسل طلبك قبل الموعد النهائي لكل قالب' : 'تظهر هنا القوالب بعد أن تعتمدها صاحبة المنصة',
     pubs: templates.map((t) => ({
       event: t.eventSubtitle ?? TRACK_INFO[t.track].name,
       title: t.eventTitle,

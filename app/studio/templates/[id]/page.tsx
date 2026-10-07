@@ -16,6 +16,7 @@ export default async function TemplatePage({ params, searchParams }: { params: P
   const events = (await listEvents()).filter((e) => e.status !== 'archived');
   const choices = events.map((e) => ({
     id: e.id,
+    status: e.status,
     title: e.title,
     subtitle: e.subtitle,
     latinTitle: e.latin_title,
@@ -28,7 +29,7 @@ export default async function TemplatePage({ params, searchParams }: { params: P
     const ev = events.find((e) => e.id === eventId);
     initial = {
       id: null, status: null, version: 1, eventId, track: ev?.track ?? 'space', allowedColors: ['petrol', 'night', 'ivory'], stampTypes: ['VIP'],
-      allowedCommittees: [], availableFrom: null, availableTo: null, requestDeadlineDays: 3, artworkPath: null, artworkUrl: null,
+      availableFrom: null, availableTo: null, requestDeadlineDays: 3, artworkPath: null, artworkUrl: null,
     };
   } else {
     if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
@@ -36,7 +37,7 @@ export default async function TemplatePage({ params, searchParams }: { params: P
     if (!t) notFound();
     initial = {
       id: t.id, status: t.status, version: t.version, eventId: t.event_id, track: t.track, allowedColors: t.allowed_colors, stampTypes: t.stamp_types,
-      allowedCommittees: t.allowed_committees, availableFrom: iso(t.available_from), availableTo: iso(t.available_to),
+      availableFrom: iso(t.available_from), availableTo: iso(t.available_to),
       requestDeadlineDays: t.request_deadline_days, artworkPath: t.artwork_path, artworkUrl: artworkUrl(t.artwork_path),
     };
   }

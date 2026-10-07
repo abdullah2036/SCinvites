@@ -33,7 +33,7 @@ export async function loginOwner(page: Page) {
 
 /** A pending leader request with three people on the seeded template. */
 export async function seedRequest(templateId: string) {
-  const [l] = await db`insert into leaders (name, email, committee, status, approved_at) values ('م. خالد الحربي', 'khalid@uqu.edu.sa', 'لجنة العلاقات', 'approved', now()) returning id`;
+  const [l] = await db`insert into leaders (name, email, status, approved_at) values ('م. خالد الحربي', 's443012345@uqu.edu.sa', 'approved', now()) returning id`;
   const [r] = await db`insert into leader_requests (leader_id, template_id, stamp, color, place_type, place_name, place_url)
     values (${l.id}, ${templateId}, 'VIP', 'night', 'in_person', 'قاعة الطلب', 'https://maps.example.com/request') returning id`;
   await db`insert into leader_request_people (request_id, position, name, org) values

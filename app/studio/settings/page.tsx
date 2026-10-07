@@ -10,7 +10,7 @@ export default async function SettingsPage() {
   const [settings, leaders] = await Promise.all([getSettings(), listLeaders()]);
   return (
     <Studio active="settings">
-      <SettingsClient settings={settings} leaders={leaders} />
+      <SettingsClient settings={settings} leaders={leaders} emailReady={!!process.env.RESEND_API_KEY} />
     </Studio>
   );
 }

@@ -30,7 +30,7 @@ describe('settings', () => {
 
   it('turning leader-request notifications off stops those emails', async () => {
     await updateSettings({ owner_email: 'owner@example.com', notifications: { leaderRequests: false, invitationRequests: true } });
-    await requestLeaderAccess({ name: 'أحمد علي', email: 'ahmad@uqu.edu.sa', committee: 'لجنة العلاقات' }, '9.9.9.9');
+    await requestLeaderAccess({ name: 'أحمد علي', email: 's443000111@uqu.edu.sa' }, '9.9.9.9');
     expect(outbox).toHaveLength(0);
   });
 

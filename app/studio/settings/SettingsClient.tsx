@@ -17,7 +17,7 @@ async function call(url: string, method: string, body?: unknown) {
   return data;
 }
 
-export default function SettingsClient({ settings: initial, leaders: initialLeaders }: { settings: Settings; leaders: LeaderListItem[] }) {
+export default function SettingsClient({ settings: initial, leaders: initialLeaders, emailReady }: { settings: Settings; leaders: LeaderListItem[]; emailReady: boolean }) {
   const router = useRouter();
   const [s, setS] = useState(initial);
   const [form, setForm] = useState({ owner_name: initial.owner_name, owner_title: initial.owner_title, owner_email: initial.owner_email ?? '' });
@@ -63,21 +63,6 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
     }
   }
 
-  async function changeCommittee(l: LeaderListItem) {
-    const committee = prompt(`لجنة ${l.name}`, l.committee)?.trim();
-    if (!committee || committee === l.committee) return;
-    setBusy(l.id);
-    try {
-      await call(`/api/leaders/${l.id}`, 'PATCH', { committee });
-      setLeaders((all) => all.map((x) => (x.id === l.id ? { ...x, committee } : x)));
-      setMsg({ text: 'حُدّثت اللجنة' });
-    } catch (e) {
-      setMsg({ text: (e as Error).message, error: true });
-    } finally {
-      setBusy(null);
-    }
-  }
-
   const pending = leaders.filter((l) => l.status === 'pending');
   const active = leaders.filter((l) => l.status === 'approved');
   const toggles: [keyof Settings['notifications'], string][] = [
@@ -101,6 +86,13 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
           بريدك (للنسخ التجريبية والتنبيهات)
           <input type="email" dir="ltr" className="field" value={form.owner_email} onChange={(e) => setForm({ ...form, owner_email: e.target.value })} placeholder="name@uqu.edu.sa" style={{ ...input, textAlign: 'left' }} />
         </label>
+        <span role="status" style={{ fontSize: 12, lineHeight: 1.7, color: emailReady && s.owner_email ? '#13707B' : '#8E6C1F' }}>
+          {!emailReady
+            ? 'إرسال البريد غير مفعّل بعد على المنصة، فالتنبيهات تظهر هنا فقط حتى يفعّله المطوّر'
+            : s.owner_email
+              ? `تصل التنبيهات إلى ${s.owner_email}`
+              : 'اكتبي بريدك واحفظيه لتصلك التنبيهات'}
+        </span>
         <button type="button" disabled={busy === 'settings'} onClick={() => save({ ...form, owner_email: form.owner_email.trim() || null })} style={{ ...small, height: 40, border: 0, background: '#0B3B41', color: '#fff', fontWeight: 700 }}>
           حفظ الملف الشخصي
         </button>
@@ -139,7 +131,7 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
       </details>
     ),
     joins: pending.map((l) => ({
-      label: `${l.name} · ${l.committee} · ${l.email}`,
+      label: `${l.name} · ${l.email}`,
       busy: busy === l.id,
       ok: () => leaderAction(l, 'approve'),
       no: () => leaderAction(l, 'revoke'),
@@ -148,13 +140,10 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
     leaders: active.map((l) => ({
       ini: l.name.replace(/^(د|أ|م)\.?\s*/, '').charAt(0),
       name: l.name,
-      role: l.committee,
+      role: 'قائد',
       mail: l.email,
       actions: (
         <span style={{ display: 'flex', gap: 6 }}>
-          <button type="button" disabled={busy === l.id} onClick={() => changeCommittee(l)} style={{ ...small, border: '1px solid rgba(19,112,123,.3)', background: 'transparent', color: '#0B3B41' }}>
-            اللجنة
-          </button>
           <button type="button" disabled={busy === l.id} onClick={() => confirm(`إيقاف ${l.name}؟ سيُسجّل خروجه فورًا`) && leaderAction(l, 'revoke')} style={{ ...small, border: '1px solid rgba(155,59,46,.35)', background: 'transparent', color: '#9B3B2E' }}>
             إيقاف
           </button>

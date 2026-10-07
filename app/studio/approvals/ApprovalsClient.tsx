@@ -68,7 +68,7 @@ export default function ApprovalsClient({ requests: initial }: { requests: Pendi
   const v = {
     reqs: requests.map((r, i) => ({
       what: `دعوات ${r.stamp} · ${ar(r.people.length)} ${r.people.length === 1 ? 'مدعو' : 'مدعوين'}`,
-      from: `${r.committee} · ${r.leaderName}`,
+      from: r.leaderName,
       bg: PALETTE[r.color].bg,
       state: states[i],
       sc: COL[states[i]][0],
@@ -83,7 +83,7 @@ export default function ApprovalsClient({ requests: initial }: { requests: Pendi
     })),
     cur: cur && {
       what: `دعوات ${cur.stamp} · ${ar(cur.people.length)} ${cur.people.length === 1 ? 'مدعو' : 'مدعوين'}`,
-      from: `${cur.committee} · ${cur.leaderName}`,
+      from: cur.leaderName,
       tpl: `${cur.eventTitle} · ${PALETTE[cur.color].label} · ${TRACK_INFO[cur.track].name}`,
       stamp: cur.stamp,
       due: daysLeft(cur.startsAt),

@@ -21,17 +21,20 @@ test('the studio is hidden at /studio and behind the secret path without a sessi
   expect((await page.goto(`/${E2E.ownerPath}`))?.status()).toBe(404);
 });
 
-test('leaders request access with name, committee and a university email', async ({ page }) => {
+test('leaders request access with a name and an s4 university email (no committee)', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByLabel('لجنتك')).toHaveCount(0);
   await page.getByLabel('اسمك').fill('خالد الحربي');
-  await page.getByLabel('لجنتك').fill('لجنة العلاقات');
-  await page.getByLabel('بريدك الجامعي').fill('khalid@gmail.com');
-  await expect(page.getByText('استخدم بريدك الجامعي')).toBeVisible();
-  await page.getByLabel('بريدك الجامعي').fill('Khalid@uqu.edu.sa');
+  await page.getByLabel('بريدك الجامعي').fill('khalid@uqu.edu.sa');
+  await expect(page.getByText('البريد الجامعي يبدأ بـ s4 ثم رقمك الجامعي')).toBeVisible();
+  await page.getByRole('button', { name: 'طلب الدخول' }).click();
+  await expect(page.getByText(/استخدم بريدك الجامعي، مثل/)).toBeVisible();
+  await page.getByLabel('بريدك الجامعي').fill('S443012345@uqu.edu.sa');
+  await expect(page.getByText('بريد جامعي صحيح')).toBeVisible();
   await page.getByRole('button', { name: 'طلب الدخول' }).click();
   await expect(page.getByText('وصل طلبك')).toBeVisible();
-  const [l] = await db`select name, email, committee, status from leaders`;
-  expect(l).toEqual({ name: 'خالد الحربي', email: 'khalid@uqu.edu.sa', committee: 'لجنة العلاقات', status: 'pending' });
+  const [l] = await db`select name, email, status from leaders`;
+  expect(l).toEqual({ name: 'خالد الحربي', email: 's443012345@uqu.edu.sa', status: 'pending' });
 });
 
 test('the owner path never ships in client JavaScript', async ({ page }) => {

@@ -1,5 +1,5 @@
 /* eslint-disable */
-// Generated from design-reference/Leader.dc.html by scripts/dc2tsx.mjs, then wired to real data by hand.
+// Ported from design-reference/Leader.dc.html, then wired to real data by hand.
 import { Fragment } from 'react';
 import { css, S } from '@/components/boards/css';
 

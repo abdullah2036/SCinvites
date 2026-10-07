@@ -12,7 +12,6 @@ Digital invitations for the Science Club: locked templates with per-track motion
 ```bash
 npm install
 npm run db:dev   # local Postgres (keep running)
-npm run db:seed  # demo data
 npm run dev
 ```
 

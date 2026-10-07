@@ -5,7 +5,6 @@ import TemplateView from '@/components/boards/TemplateView';
 import Invitation from '@/components/invitation/Invitation';
 import { PALETTE, TRACK_INFO, paletteVars } from '@/components/invitation/palette';
 import { riyadhDay } from '@/lib/shared/dates';
-import { COMMITTEES, committeeKey } from '@/lib/shared/committees';
 import { TRACKS, COLORS, STAMPS, type Color, type Track, type GuestView, type PlaceType } from '@/lib/shared/types';
 
 export type TemplateDraft = {
@@ -16,7 +15,6 @@ export type TemplateDraft = {
   track: Track;
   allowedColors: Color[];
   stampTypes: string[];
-  allowedCommittees: string[];
   availableFrom: string | null;
   availableTo: string | null;
   requestDeadlineDays: number;
@@ -24,7 +22,7 @@ export type TemplateDraft = {
   artworkUrl: string | null;
 };
 
-export type EventChoice = { id: string; title: string; subtitle: string | null; latinTitle: string | null; startsAt: string; place: { type: PlaceType; name: string | null; url: string | null } };
+export type EventChoice = { id: string; status: 'draft' | 'active' | 'archived'; title: string; subtitle: string | null; latinTitle: string | null; startsAt: string; place: { type: PlaceType; name: string | null; url: string | null } };
 
 const field: React.CSSProperties = { height: 44, borderRadius: 999, padding: '0 14px', border: '1px solid rgba(255,255,255,.95)', background: 'rgba(255,255,255,.78)', color: '#18292C', fontSize: 14, width: '100%', boxSizing: 'border-box' };
 const label: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: '#3E5456' };
@@ -42,7 +40,6 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
   const fileRef = useRef<HTMLInputElement>(null);
   const [t, setT] = useState(initial);
   const [previewColor, setPreviewColor] = useState<Color>(initial.allowedColors[0] ?? 'night');
-  const [committees, setCommittees] = useState(initial.allowedCommittees.join('، '));
   const [run, setRun] = useState(0);
   const [loader, setLoader] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -51,6 +48,16 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
   const [error, setError] = useState('');
   const editingApproved = initial.status === 'approved';
   const ev = events.find((e) => e.id === t.eventId) ?? events[0];
+  // Say plainly who will see the template, so it never silently fails to reach the leaders.
+  const [now] = useState(() => Date.now());
+  const visibility = (() => {
+    const day = (iso: string) => new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'long' }).format(new Date(iso));
+    if (ev?.status === 'draft') return { warn: true, text: `الفعالية «${ev.title}» مسودة: لن يظهر القالب للقادة حتى تجعليها نشطة من صفحة الفعاليات` };
+    if (t.availableTo && new Date(t.availableTo).getTime() < now) return { warn: true, text: `انتهت مدة ظهوره للقادة (${day(t.availableTo)})` };
+    if (ev && new Date(ev.startsAt).getTime() - t.requestDeadlineDays * 86400_000 < now) return { warn: true, text: 'انتهى موعد الطلبات لهذه الفعالية، فلن يستطيع القادة إرسال أسماء' };
+    if (t.availableFrom && new Date(t.availableFrom).getTime() > now) return { warn: false, text: `بعد الاعتماد يظهر لكل القادة المعتمدين ابتداءً من ${day(t.availableFrom)}` };
+    return { warn: false, text: 'بعد الاعتماد يظهر مباشرة لكل القادة المعتمدين' };
+  })();
   const set = (patch: Partial<TemplateDraft>) => {
     setT((x) => ({ ...x, ...patch }));
     setSaved(false);
@@ -62,7 +69,6 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
       track: t.track,
       allowedColors: t.allowedColors,
       stampTypes: t.stampTypes,
-      allowedCommittees: committees.split(/[،,\n]/).map((c) => c.trim()).filter(Boolean),
       artworkPath: t.artworkPath,
       availableFrom: t.availableFrom,
       availableTo: t.availableTo,
@@ -223,31 +229,6 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
             ))}
           </select>
         </label>
-        <div style={label}>
-          اللجان المسموح لها (بدون اختيار = كل اللجان)
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {COMMITTEES.map((c) => {
-              const list = committees.split(/[،,\n]/).map((x) => x.trim()).filter(Boolean);
-              const on = list.some((x) => committeeKey(x) === committeeKey(c));
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => {
-                    const next = on ? list.filter((x) => committeeKey(x) !== committeeKey(c)) : [...list, c];
-                    setCommittees(next.join('، '));
-                    setSaved(false);
-                  }}
-                  style={chip(on)}
-                >
-                  {c}
-                </button>
-              );
-            })}
-          </div>
-          <input aria-label="اللجان المسموح لها" value={committees} onChange={(e) => (setCommittees(e.target.value), setSaved(false))} placeholder="أو اكتبيها مفصولة بفاصلة" className="field" style={field} />
-        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <label style={label}>
             متاح من
@@ -258,6 +239,9 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
             <input type="date" value={toDay(t.availableTo)} onChange={(e) => set({ availableTo: fromDay(e.target.value, true) })} className="field" style={field} />
           </label>
         </div>
+        <p role="status" style={{ margin: 0, fontSize: 12, lineHeight: 1.7, color: visibility.warn ? '#9B3B2E' : '#3E5456' }}>
+          {visibility.text}
+        </p>
         <label style={label}>
           آخر موعد للطلبات (أيام قبل الفعالية)
           <input type="number" min={0} max={60} value={t.requestDeadlineDays} onChange={(e) => set({ requestDeadlineDays: Math.max(0, Math.min(60, Number(e.target.value) || 0)) })} className="field" style={field} />

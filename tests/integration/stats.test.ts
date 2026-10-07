@@ -51,11 +51,11 @@ describe('getStats', () => {
 
   it('counts pending leader requests and lists them', async () => {
     const t = await makeTemplate();
-    const l = await makeLeader({ committee: 'لجنة العلاقات' });
+    const l = await makeLeader({ name: 'خالد الحربي' });
     await sql`insert into leader_requests (leader_id, template_id, stamp, color) values (${l.id}, ${t.id}, 'VIP', 'night')`;
     const s = await getStats();
     expect(s.pendingApprovals).toBe(1);
-    expect(s.pendingList[0]).toMatchObject({ committee: 'لجنة العلاقات', stamp: 'VIP' });
+    expect(s.pendingList[0]).toMatchObject({ leaderName: 'خالد الحربي', stamp: 'VIP' });
   });
 
   it('is owner-only over HTTP', async () => {

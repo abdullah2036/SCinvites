@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import MainView from '@/components/boards/MainView';
 
-import { COMMITTEES } from '@/lib/shared/committees';
 
 async function postJson(url: string, body: unknown) {
   const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
@@ -14,7 +13,6 @@ async function postJson(url: string, body: unknown) {
 
 export default function MainClient() {
   const [name, setName] = useState('');
-  const [committee, setCommittee] = useState('');
   const [mail, setMail] = useState('');
   const [step, setStep] = useState<'mail' | 'wait'>('mail');
   const [status, setStatus] = useState<'pending' | 'approved' | 'revoked'>('pending');
@@ -26,8 +24,10 @@ export default function MainClient() {
   const [passError, setPassError] = useState('');
 
   const m = mail.trim();
-  const ok = /^[^\s@]+@uqu\.edu\.sa$/i.test(m);
-  // An approved email signs in on its own; name and committee are only needed for a first request (the server says so).
+  // The university format; the server also accepts leaders already approved and the review addresses.
+  const uni = /^s4\d+@uqu\.edu\.sa$/i.test(m);
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m);
+  // An approved email signs in on its own; the name is only needed for a first request (the server says so).
   const ready = ok;
 
   async function ask() {
@@ -35,7 +35,7 @@ export default function MainClient() {
     setBusy(true);
     setServerMsg('');
     try {
-      const r = await postJson('/api/leaders/request', { name, email: m, committee });
+      const r = await postJson('/api/leaders/request', { name, email: m });
       if (r.redirect) {
         location.assign(r.redirect);
         return;
@@ -65,14 +65,16 @@ export default function MainClient() {
   const v = {
     name,
     onName: (e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value),
-    committee,
-    onCommittee: (e: React.ChangeEvent<HTMLInputElement>) => setCommittee(e.target.value),
-    committees: COMMITTEES,
     mail,
-    onMail: (e: React.ChangeEvent<HTMLInputElement>) => setMail(e.target.value),
-    border: !m ? 'rgba(255,255,255,.95)' : ok ? '#13707B' : '#B5533F',
-    msgColor: serverMsg ? '#B5533F' : ok ? '#13707B' : m ? '#B5533F' : '#4F6567',
-    msg: serverMsg || (!m ? 'نوافق على بريدك مرة وحدة، وبعدها تدخل بدون كلمة سر' : ok ? 'بريد جامعي صحيح' : 'استخدم بريدك الجامعي'),
+    onMail: (e: React.ChangeEvent<HTMLInputElement>) => {
+      setMail(e.target.value);
+      setServerMsg(''); // a corrected address shouldn't keep showing the last error
+    },
+    border: !m ? 'rgba(255,255,255,.95)' : uni ? '#13707B' : ok ? 'rgba(255,255,255,.95)' : '#B5533F',
+    msgColor: serverMsg ? '#B5533F' : uni ? '#13707B' : m && !ok ? '#B5533F' : '#4F6567',
+    msg:
+      serverMsg ||
+      (!m ? 'نوافق على بريدك مرة وحدة، وبعدها تدخل بدون كلمة سر' : uni ? 'بريد جامعي صحيح' : ok ? 'البريد الجامعي يبدأ بـ s4 ثم رقمك الجامعي' : 'اكتب بريدك الجامعي كاملًا'),
     goOp: ready ? 1 : 0.55,
     busy,
     ask,

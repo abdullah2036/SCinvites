@@ -361,7 +361,7 @@ export default function CreateForm({
           <h1 className="display" style={{ margin: '0 0 8px', color: '#0B3B41' }}>
             لا توجد قوالب معتمدة بعد
           </h1>
-          <p style={{ margin: '0 0 16px', color: '#3E5456' }}>{leader ? 'تظهر هنا القوالب بعد أن تعتمدها صاحبة المنصة للجنتك' : 'جهّزي قالبًا واعتمديه أولًا من صفحة القوالب'}</p>
+          <p style={{ margin: '0 0 16px', color: '#3E5456' }}>{leader ? 'تظهر هنا القوالب بعد أن تعتمدها صاحبة المنصة' : 'جهّزي قالبًا واعتمديه أولًا من صفحة القوالب'}</p>
           <a href={homeHref}>رجوع</a>
         </div>
       </main>

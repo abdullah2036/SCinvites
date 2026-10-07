@@ -17,10 +17,10 @@ const people = [
   { name: 'م. ريم العمري', org: 'أرامكو', title: 'مهندسة' },
 ];
 
-async function setup(committee = 'لجنة العلاقات', allowed: string[] = ['لجنة العلاقات']) {
+async function setup() {
   const ev = await makeEvent({ starts_at: new Date(EVENT_AT) });
-  const t = await makeTemplate({ event_id: ev.id, allowed_committees: allowed, allowed_colors: ['night', 'petrol'], stamp_types: ['VIP', 'متحدث'], request_deadline_days: 3 });
-  const leader = await makeLeader({ committee });
+  const t = await makeTemplate({ event_id: ev.id, allowed_colors: ['night', 'petrol'], stamp_types: ['VIP', 'متحدث'], request_deadline_days: 3 });
+  const leader = await makeLeader();
   return { ev, t, leader };
 }
 const input = (templateId: string, over: Record<string, unknown> = {}) => ({ templateId, stamp: 'VIP', color: 'night', place: null, showQr: true, people, ...over }) as never;
@@ -41,11 +41,13 @@ describe('leader requests', () => {
     await expect(submitRequest(leader.id, input(t.id))).rejects.toMatchObject({ code: 'deadline_passed', status: 409, message: 'انتهى موعد الطلب لهذه الفعالية' });
   });
 
-  it('refuses templates not open to the leader’s committee', async () => {
-    const { t } = await setup('لجنة العلاقات', ['لجنة الفعاليات']);
-    const other = await makeLeader({ committee: 'لجنة العلاقات' });
+  it('refuses templates that are not open to leaders (draft or outside their dates)', async () => {
+    const { t, leader } = await setup();
     vi.useFakeTimers({ now: new Date('2026-10-01T00:00:00Z'), toFake: ['Date'] });
-    await expect(submitRequest(other.id, input(t.id))).rejects.toMatchObject({ code: 'template_not_available', status: 403 });
+    await sql`update templates set available_from = '2026-10-05T00:00:00Z' where id = ${t.id}`;
+    await expect(submitRequest(leader.id, input(t.id))).rejects.toMatchObject({ code: 'template_not_available', status: 403 });
+    await sql`update templates set available_from = null, status = 'draft' where id = ${t.id}`;
+    await expect(submitRequest(leader.id, input(t.id))).rejects.toMatchObject({ code: 'template_not_available', status: 403 });
   });
 
   it('validates color and stamp against the template', async () => {
@@ -107,7 +109,7 @@ describe('leader requests', () => {
 
   it('links appear only after approval and only to the owning leader', async () => {
     const { t, leader } = await setup();
-    const other = await makeLeader({ committee: 'لجنة العلاقات' });
+    const other = await makeLeader();
     vi.useFakeTimers({ now: new Date('2026-10-01T00:00:00Z'), toFake: ['Date'] });
     const { id } = await submitRequest(leader.id, input(t.id));
     vi.useRealTimers();
@@ -120,7 +122,7 @@ describe('leader requests', () => {
   });
 
   it('routes enforce roles: leaders submit, the owner decides', async () => {
-    const { t, leader } = await setup('لجنة العلاقات', []);
+    const { t, leader } = await setup();
     await sql`update events set starts_at = now() + interval '20 days'`;
     const { token: lt } = await createSession('leader', leader.id, 't');
     const { token: ot } = await createSession('owner', null, 't');
@@ -138,7 +140,7 @@ describe('leader requests', () => {
 
   it('returns the leader’s own request for editing, never another leader’s', async () => {
     const { t, leader } = await setup();
-    const other = await makeLeader({ committee: 'لجنة العلاقات' });
+    const other = await makeLeader();
     vi.useFakeTimers({ now: new Date('2026-10-01T00:00:00Z'), toFake: ['Date'] });
     const { id } = await submitRequest(leader.id, input(t.id));
     const r = await getLeaderRequest(leader.id, id);

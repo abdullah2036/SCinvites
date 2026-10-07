@@ -7,7 +7,7 @@ export type Stats = {
   nextEvent: { id: string; title: string; subtitle: string | null; track: Track; startsAt: string; confirmed: number; total: number; artworkUrl: string | null; color: Color } | null;
   generalInvitation: { slug: string; url: string; registrations: number } | null;
   pendingApprovals: number;
-  pendingList: { id: string; committee: string; leaderName: string; stamp: string; eventTitle: string; track: Track; createdAt: string; people: number }[];
+  pendingList: { id: string; leaderName: string; stamp: string; eventTitle: string; track: Track; createdAt: string; people: number }[];
   byStatus: Record<'confirmed' | 'opened' | 'created' | 'declined', number>;
   total: number;
   byTrack: Record<Track, number>;
@@ -52,7 +52,7 @@ export async function getStats(): Promise<Stats> {
       order by (e.starts_at > now()) desc, abs(extract(epoch from e.starts_at - now())) asc limit 1`,
     sql<{ n: number }[]>`select count(*)::int as n from leader_requests where status = 'pending'`,
     sql<Stats['pendingList']>`
-      select r.id, l.committee, l.name as "leaderName", r.stamp, e.title as "eventTitle", t.track, r.created_at as "createdAt",
+      select r.id, l.name as "leaderName", r.stamp, e.title as "eventTitle", t.track, r.created_at as "createdAt",
         (select count(*)::int from leader_request_people p where p.request_id = r.id) as people
       from leader_requests r join leaders l on l.id = r.leader_id join templates t on t.id = r.template_id join events e on e.id = t.event_id
       where r.status = 'pending' order by r.created_at desc limit 3`,

@@ -1,5 +1,5 @@
 /* eslint-disable */
-// Generated from design-reference/Main.dc.html by scripts/dc2tsx.mjs, then wired to real data by hand.
+// Ported from design-reference/Main.dc.html, then wired to real data by hand.
 import { Fragment } from 'react';
 import { css, S } from '@/components/boards/css';
 
@@ -507,15 +507,10 @@ Au
 اسمك
           </label>
           <input id="nm" className="field" value={v.name} onChange={v.onName} autoComplete="name" placeholder="الاسم كما يظهر للنادي" style={S({ height: "54px", border: "1px solid rgba(255,255,255,.95)", borderRadius: "999px", padding: "0 22px", fontFamily: "TS, sans-serif", fontSize: "16px", background: "rgba(255,255,255,.78)", color: "#18292C" })} />
-          <label htmlFor="cm" style={S({ fontSize: "13px", color: "#2C4245" })}>
-لجنتك
-          </label>
-          <input id="cm" className="field" value={v.committee} onChange={v.onCommittee} list="committees" placeholder="مثل: لجنة العلاقات" style={S({ height: "54px", border: "1px solid rgba(255,255,255,.95)", borderRadius: "999px", padding: "0 22px", fontFamily: "TS, sans-serif", fontSize: "16px", background: "rgba(255,255,255,.78)", color: "#18292C" })} />
-          <datalist id="committees">{v.committees.map((c: string) => <option key={c} value={c} />)}</datalist>
           <label htmlFor="em" style={S({ fontSize: "13px", color: "#2C4245" })}>
 بريدك الجامعي
           </label>
-          <input id="em" className="field" type="email" value={v.mail} onChange={v.onMail} placeholder="name@uqu.edu.sa" style={S({ height: "54px", border: `1px solid ${v.border}`, borderRadius: "999px", padding: "0 22px", fontFamily: "TS, sans-serif", fontSize: "16px", background: "rgba(255,255,255,.78)", color: "#18292C", direction: "ltr", textAlign: "right" })} />
+          <input id="em" className="field" type="email" value={v.mail} onChange={v.onMail} placeholder="s4xxxxxxxx@uqu.edu.sa" style={S({ height: "54px", border: `1px solid ${v.border}`, borderRadius: "999px", padding: "0 22px", fontFamily: "TS, sans-serif", fontSize: "16px", background: "rgba(255,255,255,.78)", color: "#18292C", direction: "ltr", textAlign: "right" })} />
           <span style={S({ fontSize: "12px", color: v.msgColor })}>
 {v.msg}
           </span>

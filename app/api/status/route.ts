@@ -4,6 +4,9 @@ import { checkOwnerHashFormat } from '@/lib/server/owner-auth';
 
 export const dynamic = 'force-dynamic';
 
+// Number of files in supabase/migrations — bump when adding one.
+const MIGRATIONS = 5;
+
 /**
  * Plain-language health report for the developer: each part says "ok" or what is wrong.
  * Reports only yes/no facts — never secret values, connection strings or the owner path.
@@ -15,7 +18,7 @@ export async function GET(req: Request) {
     await sql`select 1`;
     checks.database = 'ok';
     const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from schema_migrations`;
-    checks.tables = n >= 4 ? 'ok' : `only ${n} migrations applied — run the "Migrate production database" action`;
+    checks.tables = n >= MIGRATIONS ? 'ok' : `only ${n} of ${MIGRATIONS} migrations applied — run the "Migrate production database" action`;
   } catch {
     checks.database = 'cannot connect — check DATABASE_URL (Transaction pooler, port 6543, password filled in)';
     checks.tables = 'unknown';

@@ -87,13 +87,13 @@ async function setup(): Promise<Fixtures & { sql: postgres.Sql }> {
   const run = randomBytes(3).toString('hex');
   const [ev] = await sql`insert into events (title, subtitle, track, starts_at, place_type, place_name, place_url)
     values ('اختبار الضغط', ${'تشغيل ' + run}, 'space', now() + interval '10 days', 'in_person', 'القاعة', 'https://maps.example.com/x') returning id`;
-  const [tpl] = await sql`insert into templates (event_id, track, stamp_types, allowed_committees, status, approved_at, request_deadline_days)
-    values (${ev.id}, 'space', '{VIP,ضيف}', '{}', 'approved', now(), 0) returning id`;
+  const [tpl] = await sql`insert into templates (event_id, track, stamp_types, status, approved_at, request_deadline_days)
+    values (${ev.id}, 'space', '{VIP,ضيف}', 'approved', now(), 0) returning id`;
   const slug = `lt-${run}`;
   await sql`insert into invitations (template_id, color, stamp, kind, slug, place_type, place_name) values (${tpl.id}, 'night', 'عضو', 'general', ${slug}, 'in_person', 'القاعة')`;
-  const leaderEmails = Array.from({ length: LEADERS }, (_, i) => `lt${run}${i}@uqu.edu.sa`);
+  const leaderEmails = Array.from({ length: LEADERS }, (_, i) => `s4${parseInt(run, 16)}${i}@uqu.edu.sa`);
   if (leaderEmails.length)
-    await sql`insert into leaders ${sql(leaderEmails.map((email, i) => ({ name: `قائد ${i}`, email, committee: 'لجنة الاختبار', status: 'approved', approved_at: new Date() })))}`;
+    await sql`insert into leaders ${sql(leaderEmails.map((email, i) => ({ name: `قائد ${i}`, email, status: 'approved', approved_at: new Date() })))}`;
   const ownerToken = randomBytes(32).toString('base64url');
   await sql`insert into sessions (subject, token_hash, user_agent, expires_at) values ('owner', ${createHash('sha256').update(ownerToken).digest('hex')}, 'loadtest', now() + interval '1 day')`;
   return { sql, slug, templateId: tpl.id, ownerToken, leaderEmails };

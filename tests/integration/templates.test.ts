@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { sql } from '@/lib/server/db';
 import { createSession, OWNER_COOKIE } from '@/lib/server/sessions';
-import { createTemplate, updateTemplate, approveTemplate, templatesVisibleToLeader, listGalleryTemplates } from '@/lib/server/templates';
+import { createTemplate, updateTemplate, approveTemplate, templatesVisibleToLeaders, listGalleryTemplates } from '@/lib/server/templates';
 import { createEvent } from '@/lib/server/events';
 import { uploadArtwork } from '@/lib/server/storage';
 import { POST as postTemplate } from '@/app/api/templates/route';
 import { PATCH as patchTemplate } from '@/app/api/templates/[id]/route';
 import { POST as postEvent } from '@/app/api/events/route';
 import { POST as postUpload } from '@/app/api/uploads/artwork/route';
-import { resetDb, makeEvent, makeInvitation } from '../setup/db';
+import { resetDb, makeEvent, makeTemplate, makeInvitation } from '../setup/db';
 import { makeRequest } from '../setup/request';
 
 const noParams = { params: Promise.resolve({}) };
@@ -20,7 +20,6 @@ async function draft(eventId: string, over: Record<string, unknown> = {}) {
     track: 'space',
     allowedColors: ['night', 'petrol'],
     stampTypes: ['VIP'],
-    allowedCommittees: [],
     requestDeadlineDays: 3,
     ...over,
   } as never);
@@ -76,11 +75,11 @@ describe('templates', () => {
     expect(same.stamp_types).toEqual(['VIP', 'متحدث']);
   });
 
-  it('shows leaders only approved, in-window templates for their committee', async () => {
+  it('shows every leader the approved, in-window templates (old committee limits are ignored)', async () => {
     const ev = await makeEvent();
     const now = new Date();
-    const open = await approveTemplate((await draft(ev.id, { allowedCommittees: [] })).id);
-    const rel = await approveTemplate((await draft(ev.id, { allowedCommittees: ['العلاقات'] })).id);
+    const open = await approveTemplate((await draft(ev.id)).id);
+    const legacy = await makeTemplate({ event_id: ev.id, allowed_committees: ['لجنة العلاقات'] });
     await draft(ev.id); // draft: hidden
     await approveTemplate(
       (await draft(ev.id, { availableFrom: new Date(now.getTime() + day).toISOString() })).id,
@@ -91,14 +90,14 @@ describe('templates', () => {
     const superseded = await approveTemplate((await draft(ev.id)).id);
     await approveTemplate((await updateTemplate(superseded.id, { stampTypes: ['ضيف'] })).id);
 
-    const forEvents = (await templatesVisibleToLeader({ committee: 'الفعاليات' })).map((t) => t.id);
-    expect(forEvents).toContain(open.id);
-    expect(forEvents).not.toContain(rel.id);
-    expect(forEvents).not.toContain(superseded.id);
-    expect(forEvents).toHaveLength(2); // open + the new version of `superseded`
+    const visible = (await templatesVisibleToLeaders()).map((t) => t.id);
+    expect(visible).toContain(open.id);
+    expect(visible).toContain(legacy.id);
+    expect(visible).not.toContain(superseded.id);
+    expect(visible).toHaveLength(3); // open + legacy + the new version of `superseded`
 
-    const forRel = (await templatesVisibleToLeader({ committee: 'العلاقات' })).map((t) => t.id);
-    expect(forRel).toContain(rel.id);
+    await sql`update events set status = 'draft' where id = ${ev.id}`;
+    expect(await templatesVisibleToLeaders()).toHaveLength(0); // a draft event hides its templates
   });
 
   it('gallery lists approved templates only, filterable by track and stamp', async () => {

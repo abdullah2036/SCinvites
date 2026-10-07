@@ -113,7 +113,7 @@ export default function DashboardClient({ stats, base, ownerName }: { stats: Sta
     })),
     reqs: stats.pendingList.map((r) => ({
       what: `دعوة ${r.stamp} · ${r.eventTitle}`,
-      who: `${r.committee} · ${ar(r.people)} ${r.people === 1 ? 'اسم' : 'أسماء'}`,
+      who: `${r.leaderName} · ${ar(r.people)} ${r.people === 1 ? 'اسم' : 'أسماء'}`,
       bg: css(paletteVars('night')).background as string,
     })),
     q,

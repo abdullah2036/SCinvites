@@ -13,7 +13,6 @@
     "db:dev": "tsx scripts/dev-db.mts",
     "db:migrate": "tsx scripts/migrate.mts",
     "hash-password": "tsx scripts/hash-password.ts",
-    "db:seed": "tsx scripts/seed-demo.mts",
     "backup": "tsx scripts/backup.mts",
     "restore": "tsx scripts/restore.mts",
     "reset-data": "tsx scripts/reset-data.mts",

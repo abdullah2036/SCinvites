@@ -2,7 +2,6 @@ import type { z } from 'zod';
 import { sql } from './db';
 import { audit } from './audit';
 import type { TemplateInput, TemplatePatch } from '@/lib/shared/schemas';
-import { committeeKey } from '@/lib/shared/committees';
 import { AppError, type Color, type TemplateStatus, type Track } from '@/lib/shared/types';
 
 export type TemplateRow = {
@@ -14,7 +13,6 @@ export type TemplateRow = {
   allowed_colors: Color[];
   artwork_path: string | null;
   stamp_types: string[];
-  allowed_committees: string[];
   available_from: Date | null;
   available_to: Date | null;
   request_deadline_days: number;
@@ -42,10 +40,9 @@ const withEvent = () => sql`
 
 export async function createTemplate(input: z.infer<typeof TemplateInput>): Promise<TemplateRow> {
   const [row] = await sql<TemplateRow[]>`
-    insert into templates (event_id, track, allowed_colors, artwork_path, stamp_types, allowed_committees,
-                           available_from, available_to, request_deadline_days)
+    insert into templates (event_id, track, allowed_colors, artwork_path, stamp_types, available_from, available_to, request_deadline_days)
     values (${input.eventId}, ${input.track}, ${input.allowedColors}, ${input.artworkPath ?? null}, ${input.stampTypes},
-            ${input.allowedCommittees ?? []}, ${input.availableFrom ?? null}, ${input.availableTo ?? null}, ${input.requestDeadlineDays ?? 3})
+            ${input.availableFrom ?? null}, ${input.availableTo ?? null}, ${input.requestDeadlineDays ?? 3})
     returning *`;
   return row;
 }
@@ -61,7 +58,6 @@ function merged(t: TemplateRow, p: z.infer<typeof TemplatePatch>) {
     allowed_colors: p.allowedColors ?? t.allowed_colors,
     artwork_path: p.artworkPath !== undefined ? p.artworkPath : t.artwork_path,
     stamp_types: p.stampTypes ?? t.stamp_types,
-    allowed_committees: p.allowedCommittees ?? t.allowed_committees,
     available_from: p.availableFrom !== undefined ? p.availableFrom : t.available_from,
     available_to: p.availableTo !== undefined ? p.availableTo : t.available_to,
     request_deadline_days: p.requestDeadlineDays ?? t.request_deadline_days,
@@ -107,17 +103,15 @@ export async function listTemplates(): Promise<TemplateWithEvent[]> {
   return sql<TemplateWithEvent[]>`${withEvent()} where t.status <> 'superseded' order by t.created_at desc`;
 }
 
-export async function templatesVisibleToLeader(leader: { committee: string }, now = new Date()): Promise<TemplateWithEvent[]> {
-  const rows = await sql<TemplateWithEvent[]>`
+/** Every approved leader sees every approved template of an active event within its availability dates. */
+export async function templatesVisibleToLeaders(now = new Date()): Promise<TemplateWithEvent[]> {
+  return sql<TemplateWithEvent[]>`
     ${withEvent()}
     where t.status = 'approved'
       and (t.available_from is null or t.available_from <= ${now})
       and (t.available_to is null or t.available_to >= ${now})
       and e.status = 'active'
     order by e.starts_at asc`;
-  // Committee names are typed by people: compare normalized keys (prefix, spacing, letter forms).
-  const mine = committeeKey(leader.committee);
-  return rows.filter((t) => t.allowed_committees.length === 0 || t.allowed_committees.some((c) => committeeKey(c) === mine));
 }
 
 /** The currently approved version descending from a template (itself if still approved), or null. */

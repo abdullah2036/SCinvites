@@ -5,6 +5,8 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,
+  // The dev server compiles each route on first use, which can take several seconds on a cold start.
+  expect: { timeout: 10_000 },
   use: { baseURL: 'http://localhost:3100', locale: 'ar-SA', timezoneId: 'Asia/Riyadh' },
   projects: [
     { name: 'mobile', use: { ...devices['iPhone 13'], browserName: 'chromium' } },

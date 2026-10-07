@@ -29,4 +29,3 @@ backups/
 public/fonts/*.woff2
 assets/fonts/
 .next-perf/
-.perf/

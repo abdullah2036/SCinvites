@@ -2,7 +2,7 @@ import { sql } from './db';
 import { audit } from './audit';
 import { getSettings } from './settings';
 import { sendEmail, emailLayout, escapeHtml } from './email';
-import { templatesVisibleToLeader } from './templates';
+import { templatesVisibleToLeaders } from './templates';
 import * as invitations from './invitations';
 import { AppError, type Color, type PlaceType, type RequestStatus, type Track } from '@/lib/shared/types';
 
@@ -17,15 +17,15 @@ export type RequestInput = {
 };
 
 async function leaderOf(leaderId: string) {
-  const [l] = await sql<{ id: string; name: string; committee: string; status: string }[]>`select id, name, committee, status from leaders where id = ${leaderId}`;
+  const [l] = await sql<{ id: string; name: string; status: string }[]>`select id, name, status from leaders where id = ${leaderId}`;
   if (!l || l.status !== 'approved') throw new AppError('unauthorized', 401, 'يلزم تسجيل الدخول');
   return l;
 }
 
 /** Template must be visible to the leader now, the colour/stamp allowed, and the deadline not passed. */
-async function checkTemplate(leader: { committee: string }, input: RequestInput) {
+async function checkTemplate(input: RequestInput) {
   const now = new Date();
-  const t = (await templatesVisibleToLeader(leader, now)).find((x) => x.id === input.templateId);
+  const t = (await templatesVisibleToLeaders(now)).find((x) => x.id === input.templateId);
   if (!t) throw new AppError('template_not_available', 403, 'هذا القالب غير متاح لك');
   if (!t.allowed_colors.includes(input.color)) throw new AppError('color_not_allowed', 400, 'هذا اللون غير متاح لهذا القالب');
   if (!t.stamp_types.includes(input.stamp)) throw new AppError('stamp_not_allowed', 400, 'هذا الختم غير متاح لهذا القالب');
@@ -43,7 +43,7 @@ async function insertPeople(tx: typeof sql, requestId: string, people: RequestPe
 
 export async function submitRequest(leaderId: string, input: RequestInput): Promise<{ id: string; count: number }> {
   const leader = await leaderOf(leaderId);
-  const t = await checkTemplate(leader, input);
+  const t = await checkTemplate(input);
   const place = input.place ?? { type: t.event_place_type as PlaceType, name: t.event_place_name, url: t.event_place_url };
   const id = await sql.begin(async (tx) => {
     const [r] = await tx<{ id: string }[]>`
@@ -58,18 +58,18 @@ export async function submitRequest(leaderId: string, input: RequestInput): Prom
     await sendEmail({
       to: s.owner_email,
       subject: `طلب دعوات جديد — ${t.event_title}`,
-      html: emailLayout(`<p>${escapeHtml(leader.name)} (${escapeHtml(leader.committee)}) أرسل طلب ${input.people.length} دعوة لفعالية ${escapeHtml(t.event_title)}</p><p>راجعيه من صفحة طلبات الاعتماد</p>`),
+      html: emailLayout(`<p>${escapeHtml(leader.name)} أرسل طلب ${input.people.length} دعوة لفعالية ${escapeHtml(t.event_title)}</p><p>راجعيه من صفحة طلبات الاعتماد</p>`),
     }).catch((e) => console.error('request email failed', e));
   }
   return { id, count: input.people.length };
 }
 
 export async function resubmitRequest(leaderId: string, id: string, input: RequestInput): Promise<void> {
-  const leader = await leaderOf(leaderId);
+  await leaderOf(leaderId);
   const [r] = await sql<{ status: RequestStatus; leader_id: string }[]>`select status, leader_id from leader_requests where id = ${id}`;
   if (!r || r.leader_id !== leaderId) throw new AppError('forbidden', 403, 'هذا الطلب ليس لك');
   if (r.status !== 'changes_requested') throw new AppError('not_editable', 409, 'لا يمكن تعديل هذا الطلب الآن');
-  const t = await checkTemplate(leader, input);
+  const t = await checkTemplate(input);
   const place = input.place ?? { type: t.event_place_type as PlaceType, name: t.event_place_name, url: t.event_place_url };
   await sql.begin(async (tx) => {
     await tx`update leader_requests set template_id = ${input.templateId}, stamp = ${input.stamp}, color = ${input.color}, place_type = ${place.type},
@@ -146,7 +146,6 @@ export type PendingRequest = {
   id: string;
   createdAt: string;
   leaderName: string;
-  committee: string;
   eventTitle: string;
   eventSubtitle: string | null;
   latinTitle: string | null;
@@ -160,8 +159,8 @@ export type PendingRequest = {
 };
 
 export async function listPendingRequests(): Promise<PendingRequest[]> {
-  const rows = await sql<{ id: string; created_at: Date; leader_name: string; committee: string; title: string; subtitle: string | null; latin_title: string | null; starts_at: Date; track: Track; color: Color; stamp: string; place_type: PlaceType; place_name: string | null; place_url: string | null; show_qr: boolean }[]>`
-    select r.id, r.created_at, r.show_qr, l.name as leader_name, l.committee, e.title, e.subtitle, e.latin_title, e.starts_at, t.track, r.color, r.stamp, r.place_type, r.place_name, r.place_url
+  const rows = await sql<{ id: string; created_at: Date; leader_name: string; title: string; subtitle: string | null; latin_title: string | null; starts_at: Date; track: Track; color: Color; stamp: string; place_type: PlaceType; place_name: string | null; place_url: string | null; show_qr: boolean }[]>`
+    select r.id, r.created_at, r.show_qr, l.name as leader_name, e.title, e.subtitle, e.latin_title, e.starts_at, t.track, r.color, r.stamp, r.place_type, r.place_name, r.place_url
     from leader_requests r join leaders l on l.id = r.leader_id join templates t on t.id = r.template_id join events e on e.id = t.event_id
     where r.status = 'pending' order by r.created_at asc`;
   if (!rows.length) return [];
@@ -171,7 +170,6 @@ export async function listPendingRequests(): Promise<PendingRequest[]> {
     id: r.id,
     createdAt: r.created_at.toISOString(),
     leaderName: r.leader_name,
-    committee: r.committee,
     eventTitle: r.title,
     eventSubtitle: r.subtitle,
     latinTitle: r.latin_title,

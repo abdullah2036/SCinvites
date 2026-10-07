@@ -27,10 +27,13 @@ describe('schema', () => {
     expect(count).toBe(0);
   });
 
-  it('accepts only lowercase uqu.edu.sa leader emails', async () => {
-    await expect(sql`insert into leaders (name, email, committee) values ('أ', 'x@gmail.com', 'ع')`).rejects.toThrow(/check/);
-    await expect(sql`insert into leaders (name, email, committee) values ('أ', 'X@uqu.edu.sa', 'ع')`).rejects.toThrow(/check/);
-    await sql`insert into leaders (name, email, committee) values ('أ', 'x@uqu.edu.sa', 'ع')`;
+  it('stores leader emails lower-case and email-shaped (the app enforces the s4 format)', async () => {
+    await expect(sql`insert into leaders (name, email) values ('أ', 'X@uqu.edu.sa')`).rejects.toThrow(/check/);
+    await expect(sql`insert into leaders (name, email) values ('أ', 'not-an-email')`).rejects.toThrow(/check/);
+    await sql`insert into leaders (name, email) values ('أ', 's443000111@uqu.edu.sa')`;
+    await sql`insert into leaders (name, email) values ('ب', 'reviewer@gmail.com')`;
+    const [l] = await sql`select committee from leaders limit 1`;
+    expect(l.committee).toBe('');
   });
 
   it('keeps invitation slugs unique', async () => {

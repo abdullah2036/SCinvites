@@ -4,10 +4,10 @@ import { E2E } from './config';
 
 test('owner approves a leader request; the leader then signs in by email', async ({ page }) => {
   await reset();
-  await db`insert into leaders (name, email, committee) values ('سارة الغامدي', 'sara@uqu.edu.sa', 'لجنة الفعاليات')`;
+  await db`insert into leaders (name, email) values ('سارة الغامدي', 's443000222@uqu.edu.sa')`;
   await loginOwner(page);
   await page.goto(`/${E2E.ownerPath}/settings`);
-  await expect(page.getByText('سارة الغامدي · لجنة الفعاليات · sara@uqu.edu.sa')).toBeVisible();
+  await expect(page.getByText('سارة الغامدي · s443000222@uqu.edu.sa')).toBeVisible();
   await page.getByRole('button', { name: 'موافقة' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'يدخل الآن من الصفحة الرئيسية ببريده الجامعي' })).toBeVisible();
   expect((await db`select status from leaders`)[0].status).toBe('approved');

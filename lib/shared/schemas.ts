@@ -12,11 +12,10 @@ const optText = (max: number) =>
     .transform((s) => s || null)
     .nullish();
 
-// Name and committee are only needed the first time; an approved email signs in on its own.
+// The name is only needed the first time; an approved email signs in on its own.
 export const LeaderRequestInput = z.object({
   name: text(0, 80).optional(),
   email: text(3, 120),
-  committee: text(0, 60).optional(),
 });
 
 export const PlaceInput = z.object({
@@ -43,7 +42,6 @@ export const TemplateInput = z.object({
   allowedColors: z.array(z.enum(COLORS)).min(1),
   artworkPath: optText(200),
   stampTypes: z.array(z.enum(STAMPS)).min(1).max(STAMPS.length),
-  allowedCommittees: z.array(text(1, 60)).max(20).default([]),
   availableFrom: z.iso.datetime({ offset: true }).nullish(),
   availableTo: z.iso.datetime({ offset: true }).nullish(),
   requestDeadlineDays: z.number().int().min(0).max(60).default(3),

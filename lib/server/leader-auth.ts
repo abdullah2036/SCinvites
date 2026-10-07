@@ -8,22 +8,36 @@ import { createSession, getSession, revokeLeaderSessions, LEADER_COOKIE } from '
 import { readCookie } from './http';
 import { AppError, type LeaderStatus, type Session } from '@/lib/shared/types';
 
-export function normalizeLeaderEmail(raw: string): string | null {
+/** Lower-cased email if it is shaped like one, else null. */
+export function normalizeEmail(raw: string): string | null {
   const e = raw.trim().toLowerCase();
-  return /^[^\s@]+@uqu\.edu\.sa$/.test(e) ? e : null;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : null;
 }
+
+/**
+ * Who may ask for leader access: university accounts in the s4<student id>@uqu.edu.sa format, plus the developer's
+ * and owner's review addresses in EXTRA_LEADER_EMAILS (comma-separated; kept in Vercel, not in this public repo).
+ */
+export function mayRequestLeaderAccess(email: string): boolean {
+  if (/^s4\d+@uqu\.edu\.sa$/.test(email)) return true;
+  const extra = (process.env.EXTRA_LEADER_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase());
+  return extra.includes(email);
+}
+
+const FORMAT_MESSAGE = 'استخدم بريدك الجامعي، مثل: s443012345@uqu.edu.sa';
 
 /**
  * One form for both cases (the owner's choice: the university email is the identity, no one-time links):
  * a new email becomes a pending request; an approved email signs straight in with a 180-day sliding session.
+ * The email format applies to new requests; leaders the owner already approved keep signing in.
  */
 export async function requestLeaderAccess(
-  input: { name?: string; email: string; committee?: string },
+  input: { name?: string; email: string },
   ip: string,
   userAgent = '',
 ): Promise<{ status: LeaderStatus; session?: { token: string; maxAge: number } }> {
-  const email = normalizeLeaderEmail(input.email);
-  if (!email) throw new AppError('invalid_email', 400, 'استخدم بريدك الجامعي المنتهي بـ uqu.edu.sa');
+  const email = normalizeEmail(input.email);
+  if (!email) throw new AppError('invalid_email', 400, FORMAT_MESSAGE);
   await hitRateLimit(`leader-check:ip:${sha256(ip)}`, 3600, LIMITS.leaderCheckPerIpPerHour);
 
   const [existing] = await sql<{ id: string; status: LeaderStatus }[]>`select id, status from leaders where email = ${email}`;
@@ -35,19 +49,20 @@ export async function requestLeaderAccess(
   }
   if (existing) return { status: existing.status };
 
+  if (!mayRequestLeaderAccess(email)) throw new AppError('invalid_email', 400, FORMAT_MESSAGE);
   const name = input.name?.trim() ?? '';
-  const committee = input.committee?.trim() ?? '';
-  if (name.length < 2 || committee.length < 2) throw new AppError('details_required', 400, 'أول مرة؟ اكتب اسمك ولجنتك مع بريدك');
+  if (name.length < 2) throw new AppError('details_required', 400, 'أول مرة؟ اكتب اسمك مع بريدك');
   await hitRateLimit(`leader-req:ip:${sha256(ip)}`, 3600, LIMITS.leaderNewPerIpPerHour);
   await hitRateLimit(`leader-req:email:${email}`, 86400, LIMITS.leaderNewPerEmailPerDay);
 
-  await sql`insert into leaders (name, email, committee) values (${name}, ${email}, ${committee}) on conflict (email) do nothing`;
+  // committee: no longer used (the column stays for old rows and backups).
+  await sql`insert into leaders (name, email, committee) values (${name}, ${email}, '') on conflict (email) do nothing`;
   const s = await getSettings();
   if (s.owner_email && s.notifications.leaderRequests) {
     await sendEmail({
       to: s.owner_email,
       subject: 'طلب دخول جديد من قائد',
-      html: emailLayout(`<p>طلب دخول جديد على منصة الدعوات</p><p><strong>${escapeHtml(name)}</strong> · ${escapeHtml(committee)}<br>${escapeHtml(email)}</p><p>راجعي الطلب من صفحة الإعدادات</p>`),
+      html: emailLayout(`<p>طلب دخول جديد على منصة الدعوات</p><p><strong>${escapeHtml(name)}</strong><br>${escapeHtml(email)}</p><p>راجعي الطلب من صفحة الإعدادات</p>`),
     }).catch((e) => console.error('leader request email failed', e));
   }
   return { status: 'pending' };
@@ -74,19 +89,11 @@ export async function requireLeader(req: Request): Promise<Session & { leaderId:
   return s as Session & { leaderId: string };
 }
 
-export type LeaderListItem = { id: string; name: string; email: string; committee: string; status: LeaderStatus; createdAt: string };
+export type LeaderListItem = { id: string; name: string; email: string; status: LeaderStatus; createdAt: string };
 
 export async function listLeaders(): Promise<LeaderListItem[]> {
   const rows = await sql<(LeaderListItem & { createdAt: Date })[]>`
-    select id, name, email, committee, status, created_at as "createdAt" from leaders
+    select id, name, email, status, created_at as "createdAt" from leaders
     order by case status when 'pending' then 0 when 'approved' then 1 else 2 end, name`;
   return rows.map((r) => ({ ...r, createdAt: new Date(r.createdAt).toISOString() }));
-}
-
-export async function updateLeaderCommittee(id: string, committee: string): Promise<void> {
-  const c = committee.replace(/\s+/g, ' ').trim();
-  if (c.length < 2 || c.length > 60) throw new AppError('invalid_input', 400, 'اكتبي اسم اللجنة');
-  const rows = await sql`update leaders set committee = ${c} where id = ${id} returning id`;
-  if (!rows.length) throw new AppError('not_found', 404, 'القائد غير موجود');
-  await audit('owner', 'leader.committee', id, { committee: c });
 }
