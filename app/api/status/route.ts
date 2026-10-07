@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { sql } from '@/lib/server/db';
 import { checkOwnerHashFormat } from '@/lib/server/owner-auth';
+import { leaderTemplateCounts } from '@/lib/server/templates';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,16 @@ export async function GET(req: Request) {
       checks.connections = `${c.total} open, ${c.active} busy, ${c.stuck} stuck in a transaction`;
     } catch {
       checks.connections = 'unknown';
+    }
+  }
+  if (checks.database.startsWith('ok')) {
+    try {
+      const c = await leaderTemplateCounts();
+      const total = Object.values(c).reduce((a, b) => a + b, 0);
+      const hidden = Object.entries(c).filter(([k]) => k !== 'visible').map(([k, n]) => `${n} ${k}`);
+      checks.templates = `${total} current, ${c.visible ?? 0} visible to leaders${hidden.length ? ` (hidden: ${hidden.join(', ')})` : ''}`;
+    } catch {
+      checks.templates = 'unknown';
     }
   }
   checks.server = `${process.env.VERCEL_REGION ?? 'local'}, up ${Math.round(process.uptime())} s`;

@@ -116,6 +116,15 @@ const hiddenReason = (now: Date) => sql`
        when t.available_to is not null and t.available_to < ${now} then 'ended'
   end`;
 
+/** For the status page: how many current templates leaders can see, and why the others are hidden (counts only). */
+export async function leaderTemplateCounts(now = new Date()): Promise<Record<string, number>> {
+  const rows = await sql<{ reason: string | null; n: number }[]>`
+    select ${hiddenReason(now)} as reason, count(*)::int as n
+    from templates t join events e on e.id = t.event_id
+    where t.status <> 'superseded' group by 1`;
+  return Object.fromEntries(rows.map((r) => [r.reason ?? 'visible', r.n]));
+}
+
 /** Every approved leader sees every approved template of an active event within its availability dates. */
 export async function templatesVisibleToLeaders(now = new Date()): Promise<TemplateWithEvent[]> {
   return sql<TemplateWithEvent[]>`
