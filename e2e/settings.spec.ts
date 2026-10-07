@@ -22,3 +22,21 @@ test('owner saves the profile email and toggles a notification', async ({ page }
   await expect(page.getByRole('status').filter({ hasText: 'حُفظت الإعدادات' })).toBeVisible();
   await expect.poll(async () => (await db`select value from settings where key = 'owner_email'`)[0]?.value).toBe('owner@example.com');
 });
+
+test('rejecting asks first, and a turned-off leader can be re-enabled', async ({ page }) => {
+  await reset();
+  await db`insert into leaders (name, email) values ('نورة', 's443000444@uqu.edu.sa')`;
+  await loginOwner(page);
+  await page.goto(`/${E2E.ownerPath}/settings`);
+  page.once('dialog', (d) => d.dismiss()); // a stray tap on «×» does nothing
+  await page.getByRole('button', { name: 'رفض' }).click();
+  await expect.poll(async () => (await db`select status from leaders`)[0].status).toBe('pending');
+  await page.getByRole('button', { name: 'موافقة' }).click();
+  await expect.poll(async () => (await db`select status from leaders`)[0].status).toBe('approved');
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'إيقاف' }).click();
+  await expect(page.getByText('موقوف')).toBeVisible();
+  await page.getByRole('button', { name: 'إعادة التفعيل' }).click();
+  await expect.poll(async () => (await db`select status from leaders`)[0].status).toBe('approved');
+  await expect(page.getByRole('button', { name: 'إيقاف' })).toBeVisible();
+});

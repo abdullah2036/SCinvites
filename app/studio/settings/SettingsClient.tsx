@@ -64,7 +64,8 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
   }
 
   const pending = leaders.filter((l) => l.status === 'pending');
-  const active = leaders.filter((l) => l.status === 'approved');
+  // Approved first, then turned-off accounts (so a mistaken «إيقاف» or «×» can be undone).
+  const active = [...leaders.filter((l) => l.status === 'approved'), ...leaders.filter((l) => l.status === 'revoked')];
   const toggles: [keyof Settings['notifications'], string][] = [
     ['invitationRequests', 'إشعار عند وصول طلب اعتماد'],
     ['leaderRequests', 'إشعار عند طلب قائد للدخول'],
@@ -134,19 +135,25 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
       label: `${l.name} · ${l.email}`,
       busy: busy === l.id,
       ok: () => leaderAction(l, 'approve'),
-      no: () => leaderAction(l, 'revoke'),
+      no: () => confirm(`رفض طلب ${l.name}؟ لن يستطيع الدخول حتى تعيدي تفعيله`) && leaderAction(l, 'revoke'),
     })),
     joinsEmpty: pending.length ? '' : 'لا توجد طلبات جديدة',
     leaders: active.map((l) => ({
       ini: l.name.replace(/^(د|أ|م)\.?\s*/, '').charAt(0),
       name: l.name,
-      role: 'قائد',
+      role: l.status === 'revoked' ? 'موقوف' : 'قائد',
       mail: l.email,
       actions: (
         <span style={{ display: 'flex', gap: 6 }}>
-          <button type="button" disabled={busy === l.id} onClick={() => confirm(`إيقاف ${l.name}؟ سيُسجّل خروجه فورًا`) && leaderAction(l, 'revoke')} style={{ ...small, border: '1px solid rgba(155,59,46,.35)', background: 'transparent', color: '#9B3B2E' }}>
-            إيقاف
-          </button>
+          {l.status === 'revoked' ? (
+            <button type="button" disabled={busy === l.id} onClick={() => leaderAction(l, 'approve')} style={{ ...small, border: 0, background: 'rgba(19,112,123,.12)', color: '#13707B', fontWeight: 700 }}>
+              إعادة التفعيل
+            </button>
+          ) : (
+            <button type="button" disabled={busy === l.id} onClick={() => confirm(`إيقاف ${l.name}؟ سيُسجّل خروجه فورًا`) && leaderAction(l, 'revoke')} style={{ ...small, border: '1px solid rgba(155,59,46,.35)', background: 'transparent', color: '#9B3B2E' }}>
+              إيقاف
+            </button>
+          )}
         </span>
       ),
     })),
