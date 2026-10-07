@@ -75,18 +75,12 @@ describe('templates', () => {
     expect(same.stamp_types).toEqual(['VIP', 'متحدث']);
   });
 
-  it('shows every leader the approved, in-window templates (old committee limits are ignored)', async () => {
+  it('shows every leader the approved templates right away (old committee limits and date windows are ignored)', async () => {
     const ev = await makeEvent();
     const now = new Date();
     const open = await approveTemplate((await draft(ev.id)).id);
-    const legacy = await makeTemplate({ event_id: ev.id, allowed_committees: ['لجنة العلاقات'] });
+    const legacy = await makeTemplate({ event_id: ev.id, allowed_committees: ['لجنة العلاقات'], available_from: new Date(now.getTime() + 5 * day) });
     await draft(ev.id); // draft: hidden
-    await approveTemplate(
-      (await draft(ev.id, { availableFrom: new Date(now.getTime() + day).toISOString() })).id,
-    ); // not yet open
-    await approveTemplate(
-      (await draft(ev.id, { availableTo: new Date(now.getTime() - day).toISOString() })).id,
-    ); // closed
     const superseded = await approveTemplate((await draft(ev.id)).id);
     await approveTemplate((await updateTemplate(superseded.id, { stampTypes: ['ضيف'] })).id);
 
@@ -110,13 +104,14 @@ describe('templates', () => {
     const draft = await makeTemplate({ event_id: active.id, status: 'draft', approved_at: null });
     const onDraftEvent = await makeTemplate({ event_id: draftEvent.id });
     const onArchived = await makeTemplate({ event_id: archived.id });
-    const later = await makeTemplate({ event_id: active.id, available_from: new Date(now + day) });
-    const over = await makeTemplate({ event_id: active.id, available_to: new Date(now - day) });
+    const past = await makeEvent({ starts_at: new Date(now - 3 * day) });
+    const later = await makeTemplate({ event_id: active.id, available_from: new Date(now + day) }); // old window: ignored
+    const over = await makeTemplate({ event_id: past.id });
     const reasons = Object.fromEntries((await listTemplates()).map((t) => [t.id, t.hidden_reason]));
     expect(reasons).toEqual({
-      [ok.id]: null, [draft.id]: 'not_approved', [onDraftEvent.id]: 'event_draft', [onArchived.id]: 'event_archived', [later.id]: 'not_yet', [over.id]: 'ended',
+      [ok.id]: null, [draft.id]: 'not_approved', [onDraftEvent.id]: 'event_draft', [onArchived.id]: 'event_archived', [later.id]: null, [over.id]: 'event_over',
     });
-    expect((await templatesVisibleToLeaders()).map((t) => t.id)).toEqual([ok.id]);
+    expect((await templatesVisibleToLeaders()).map((t) => t.id).sort()).toEqual([ok.id, later.id].sort());
   });
 
   it('gallery lists approved templates only, filterable by track and stamp', async () => {

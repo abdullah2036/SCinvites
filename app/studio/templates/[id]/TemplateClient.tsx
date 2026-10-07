@@ -52,11 +52,9 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
   // Say plainly who will see the template, so it never silently fails to reach the leaders.
   const [now] = useState(() => Date.now());
   const visibility = (() => {
-    const day = (iso: string) => new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'long' }).format(new Date(iso));
-    if (ev?.status === 'draft') return { warn: true, text: `الفعالية «${ev.title}» مسودة: لن يظهر القالب للقادة حتى تجعليها نشطة من صفحة الفعاليات` };
-    if (t.availableTo && new Date(t.availableTo).getTime() < now) return { warn: true, text: `انتهت مدة ظهوره للقادة (${day(t.availableTo)})` };
-    if (ev && new Date(ev.startsAt).getTime() - t.requestDeadlineDays * 86400_000 < now) return { warn: true, text: 'انتهى موعد الطلبات لهذه الفعالية، فلن يستطيع القادة إرسال أسماء' };
-    if (t.availableFrom && new Date(t.availableFrom).getTime() > now) return { warn: false, text: `بعد الاعتماد يظهر لكل القادة المعتمدين ابتداءً من ${day(t.availableFrom)}` };
+    if (ev?.status === 'draft') return { warn: true, text: `الفعالية «${ev.title}» مسودة: لن يظهر القالب للقادة حتى تجعليها «فعّالة» من صفحة الفعاليات` };
+    if (ev && new Date(ev.startsAt).getTime() + 86400_000 < now) return { warn: true, text: 'هذه الفعالية انتهت، فلن يظهر القالب للقادة' };
+    if (ev && new Date(ev.startsAt).getTime() - t.requestDeadlineDays * 86400_000 < now) return { warn: true, text: 'يظهر للقادة، لكن انتهى موعد الطلبات لهذه الفعالية فلن يستطيعوا إرسال أسماء' };
     return { warn: false, text: 'بعد الاعتماد يظهر مباشرة لكل القادة المعتمدين' };
   })();
   const set = (patch: Partial<TemplateDraft>) => {
@@ -71,8 +69,9 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
       allowedColors: t.allowedColors,
       stampTypes: t.stampTypes,
       artworkPath: t.artworkPath,
-      availableFrom: t.availableFrom,
-      availableTo: t.availableTo,
+      // the availability window is no longer used; saving clears any old dates
+      availableFrom: null,
+      availableTo: null,
       requestDeadlineDays: t.requestDeadlineDays,
     };
   }
@@ -230,16 +229,6 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
             ))}
           </select>
         </label>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <label style={label}>
-            متاح من
-            <input type="date" value={toDay(t.availableFrom)} onChange={(e) => set({ availableFrom: fromDay(e.target.value) })} className="field" style={field} />
-          </label>
-          <label style={label}>
-            إلى
-            <input type="date" value={toDay(t.availableTo)} onChange={(e) => set({ availableTo: fromDay(e.target.value, true) })} className="field" style={field} />
-          </label>
-        </div>
         <p role="status" style={{ margin: 0, fontSize: 12, lineHeight: 1.7, color: visibility.warn ? '#9B3B2E' : '#3E5456' }}>
           {visibility.text}
         </p>

@@ -106,14 +106,17 @@ export async function listTemplates(now = new Date()): Promise<(TemplateWithEven
     where t.status <> 'superseded' order by t.created_at desc`;
 }
 
-/** Why leaders can't see a template right now (null = they can). The one rule for both the leader page and the owner's list. */
-export type HiddenReason = 'not_approved' | 'event_draft' | 'event_archived' | 'not_yet' | 'ended' | null;
+/**
+ * Why leaders can't see a template right now (null = they can). The one rule for both the leader page and the owner's
+ * list. An approved template shows as soon as it is approved and until a day after its event; the old «متاح من / إلى»
+ * window confused everyone (a future «متاح من» silently hid the only template), so it is no longer used.
+ */
+export type HiddenReason = 'not_approved' | 'event_draft' | 'event_archived' | 'event_over' | null;
 const hiddenReason = (now: Date) => sql`
   case when t.status <> 'approved' then 'not_approved'
        when e.status = 'draft' then 'event_draft'
        when e.status = 'archived' then 'event_archived'
-       when t.available_from is not null and t.available_from > ${now} then 'not_yet'
-       when t.available_to is not null and t.available_to < ${now} then 'ended'
+       when coalesce(e.ends_at, e.starts_at) + interval '1 day' < ${now} then 'event_over'
   end`;
 
 /** For the status page: how many current templates leaders can see, and why the others are hidden (counts only). */
@@ -125,7 +128,7 @@ export async function leaderTemplateCounts(now = new Date()): Promise<Record<str
   return Object.fromEntries(rows.map((r) => [r.reason ?? 'visible', r.n]));
 }
 
-/** Every approved leader sees every approved template of an active event within its availability dates. */
+/** Every approved leader sees every approved template of an active event that hasn't ended. */
 export async function templatesVisibleToLeaders(now = new Date()): Promise<TemplateWithEvent[]> {
   return sql<TemplateWithEvent[]>`
     ${withEvent()}

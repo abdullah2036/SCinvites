@@ -41,12 +41,13 @@ describe('leader requests', () => {
     await expect(submitRequest(leader.id, input(t.id))).rejects.toMatchObject({ code: 'deadline_passed', status: 409, message: 'انتهى موعد الطلب لهذه الفعالية' });
   });
 
-  it('refuses templates that are not open to leaders (draft or outside their dates)', async () => {
-    const { t, leader } = await setup();
+  it('refuses templates that are not open to leaders (draft, or its event is a draft)', async () => {
+    const { t, ev, leader } = await setup();
     vi.useFakeTimers({ now: new Date('2026-10-01T00:00:00Z'), toFake: ['Date'] });
-    await sql`update templates set available_from = '2026-10-05T00:00:00Z' where id = ${t.id}`;
+    await sql`update events set status = 'draft' where id = ${ev.id}`;
     await expect(submitRequest(leader.id, input(t.id))).rejects.toMatchObject({ code: 'template_not_available', status: 403 });
-    await sql`update templates set available_from = null, status = 'draft' where id = ${t.id}`;
+    await sql`update events set status = 'active' where id = ${ev.id}`;
+    await sql`update templates set status = 'draft' where id = ${t.id}`;
     await expect(submitRequest(leader.id, input(t.id))).rejects.toMatchObject({ code: 'template_not_available', status: 403 });
   });
 

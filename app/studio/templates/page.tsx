@@ -15,7 +15,7 @@ export default async function TemplatesPage() {
         cards={templates.map((t) => ({
           id: t.id, track: t.track, eventTitle: t.event_title, eventSubtitle: t.event_subtitle, stampTypes: t.stamp_types,
           allowedColors: t.allowed_colors, artworkUrl: artworkUrl(t.artwork_path), status: t.status, version: t.version,
-          hidden: { reason: t.hidden_reason, from: t.available_from ? new Date(t.available_from).toISOString() : null },
+          hidden: t.hidden_reason,
         }))}
       />
     </Studio>
