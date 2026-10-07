@@ -29,7 +29,7 @@ export async function GET() {
       probe<{ state: string | null; wait: string | null; xact_s: number | null; query_s: number | null; blocked_by: number; query: string | null }[]>`
         select state, nullif(concat_ws(':', wait_event_type, wait_event), '') as wait,
                extract(epoch from now() - xact_start)::int as xact_s, extract(epoch from now() - query_start)::int as query_s,
-               cardinality(pg_blocking_pids(pid)) as blocked_by, left(regexp_replace(query, '\s+', ' ', 'g'), 70) as query
+               cardinality(pg_blocking_pids(pid)) as blocked_by, left(regexp_replace(query, '[[:space:]]+', ' ', 'g'), 70) as query
         from pg_stat_activity
         where datname = current_database() and pid <> pg_backend_pid() and backend_type = 'client backend'
         order by xact_start nulls last`,
