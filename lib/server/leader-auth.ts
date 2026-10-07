@@ -1,7 +1,7 @@
 import { sql } from './db';
 import { sha256 } from './crypto';
 import { audit } from './audit';
-import { hitRateLimit } from './ratelimit';
+import { hitRateLimit, LIMITS } from './ratelimit';
 import { getSettings } from './settings';
 import { sendEmail, emailLayout, escapeHtml } from './email';
 import { createSession, getSession, revokeLeaderSessions, LEADER_COOKIE } from './sessions';
@@ -24,10 +24,11 @@ export async function requestLeaderAccess(
 ): Promise<{ status: LeaderStatus; session?: { token: string; maxAge: number } }> {
   const email = normalizeLeaderEmail(input.email);
   if (!email) throw new AppError('invalid_email', 400, 'استخدم بريدك الجامعي المنتهي بـ uqu.edu.sa');
-  await hitRateLimit(`leader-check:ip:${sha256(ip)}`, 3600, 30);
+  await hitRateLimit(`leader-check:ip:${sha256(ip)}`, 3600, LIMITS.leaderCheckPerIpPerHour);
 
   const [existing] = await sql<{ id: string; status: LeaderStatus }[]>`select id, status from leaders where email = ${email}`;
   if (existing?.status === 'approved') {
+    await hitRateLimit(`leader-signin:email:${email}`, 3600, LIMITS.leaderSignInPerEmailPerHour);
     const session = await createSession('leader', existing.id, userAgent);
     await audit('leader', 'leader.login', existing.id);
     return { status: 'approved', session };
@@ -37,8 +38,8 @@ export async function requestLeaderAccess(
   const name = input.name?.trim() ?? '';
   const committee = input.committee?.trim() ?? '';
   if (name.length < 2 || committee.length < 2) throw new AppError('details_required', 400, 'أول مرة؟ اكتب اسمك ولجنتك مع بريدك');
-  await hitRateLimit(`leader-req:ip:${sha256(ip)}`, 3600, 5);
-  await hitRateLimit(`leader-req:email:${email}`, 86400, 3);
+  await hitRateLimit(`leader-req:ip:${sha256(ip)}`, 3600, LIMITS.leaderNewPerIpPerHour);
+  await hitRateLimit(`leader-req:email:${email}`, 86400, LIMITS.leaderNewPerEmailPerDay);
 
   await sql`insert into leaders (name, email, committee) values (${name}, ${email}, ${committee}) on conflict (email) do nothing`;
   const s = await getSettings();

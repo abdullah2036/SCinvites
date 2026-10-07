@@ -9,6 +9,7 @@ import { POST as approve } from '@/app/api/leaders/[id]/approve/route';
 import { POST as revoke } from '@/app/api/leaders/[id]/revoke/route';
 import { resetDb } from '../setup/db';
 import { makeRequest, readSetCookies } from '../setup/request';
+import { LIMITS } from '@/lib/server/ratelimit';
 
 const noParams = { params: Promise.resolve({}) };
 const idParams = (id: string) => ({ params: Promise.resolve({ id }) });
@@ -128,12 +129,9 @@ describe('leader access', () => {
     expect(rows.map((r) => r.action)).toEqual(['leader.approve', 'leader.login', 'leader.revoke']);
   });
 
-  it('rate-limits repeated requests from one IP', async () => {
-    let last = 0;
-    for (let i = 0; i < 6; i++) {
-      const res = await requestAccess(makeRequest('POST', '/api/leaders/request', { body: { name: 'أحمد', email: `l${i}@uqu.edu.sa`, committee: 'العلاقات' }, ip: '7.7.7.7' }), noParams);
-      last = res.status;
-    }
-    expect(last).toBe(429);
+  it('lets many leaders behind one campus IP request access, but stops a flood', async () => {
+    for (let i = 0; i < 40; i++) expect((await ask({ name: 'أحمد', email: `l${i}@uqu.edu.sa`, committee: 'العلاقات' }, '7.7.7.7')).status).toBe(200);
+    await sql`update rate_limits set count = ${LIMITS.leaderNewPerIpPerHour} where key like 'leader-req:ip:%'`;
+    expect((await ask({ name: 'أحمد', email: 'flood@uqu.edu.sa', committee: 'العلاقات' }, '7.7.7.7')).status).toBe(429);
   });
 });

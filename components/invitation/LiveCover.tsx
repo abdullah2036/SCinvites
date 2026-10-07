@@ -27,7 +27,8 @@ export default function LiveCover({ track, artworkUrl }: { track: Track; artwork
   }, []);
 
   return (
-    <div ref={ref} data-paused={visible ? 'false' : 'true'} style={{ position: 'absolute', inset: 0 }}>
+    // content-visibility: the browser skips styling and painting covers that are off-screen (long lists on phones).
+    <div ref={ref} data-paused={visible ? 'false' : 'true'} style={{ position: 'absolute', inset: 0, contentVisibility: 'auto' }}>
       {artworkUrl ? (
          
         <img src={artworkUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />

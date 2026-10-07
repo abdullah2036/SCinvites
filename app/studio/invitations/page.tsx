@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'الدعوات — منصة الدع
 export default async function InvitationsPage() {
   const items = await listInvitations({ limit: 2000 });
   return (
-    <Studio active="invitations">
+    <Studio active="invitations" live={false}>
       <InvitationsClient items={items} />
     </Studio>
   );

@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { getGuestView, getRegistration } from '@/lib/server/guest';
+import { getGuestView as loadGuestView, getRegistration } from '@/lib/server/guest';
 import GuestClient from './GuestClient';
 import Unavailable from './Unavailable';
 
 export const dynamic = 'force-dynamic';
+
+// Metadata and the page need the same invitation: load it once per request.
+const getGuestView = cache(loadGuestView);
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ src?: string }> };
 

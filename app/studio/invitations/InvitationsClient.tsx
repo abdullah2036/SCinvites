@@ -23,6 +23,7 @@ const LABEL: Record<InvitationStatus, [string, string, string]> = {
   declined: ['اعتذر', '#5E594F', 'rgba(125,119,105,.14)'],
   revoked: ['ملغاة', '#8E3B2E', 'rgba(142,59,46,.1)'],
 };
+const PAGE = 60;
 const day = (iso: string) => new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'long' }).format(new Date(iso));
 
 export default function InvitationsClient({ items: initial }: { items: InvitationListItem[] }) {
@@ -34,6 +35,8 @@ export default function InvitationsClient({ items: initial }: { items: Invitatio
     setItems(initial);
   }
   const [q, setQ] = useState('');
+  // Thousands of rows freeze a phone: draw the newest ones and add more on request.
+  const [shown, setShown] = useState(PAGE);
   const [f, setF] = useState(0);
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
   const [preview, setPreview] = useState<GuestView | null>(null);
@@ -75,7 +78,10 @@ export default function InvitationsClient({ items: initial }: { items: Invitatio
 
   const v = {
     q,
-    onQ: (e: React.ChangeEvent<HTMLInputElement>) => setQ(e.target.value),
+    onQ: (e: React.ChangeEvent<HTMLInputElement>) => {
+      setQ(e.target.value);
+      setShown(PAGE);
+    },
     statuses: FILTERS.map(([name, , dot], i) => ({
       name,
       on: i === f ? 'true' : 'false',
@@ -83,9 +89,12 @@ export default function InvitationsClient({ items: initial }: { items: Invitatio
       bg: i === f ? '#0B3B41' : 'rgba(255,255,255,.55)',
       text: i === f ? '#FFFFFF' : '#2C4245',
       dot,
-      pick: () => setF(i),
+      pick: () => {
+        setF(i);
+        setShown(PAGE);
+      },
     })),
-    rows: rows.map((i) => {
+    rows: rows.slice(0, shown).map((i) => {
       const st = LABEL[i.status];
       return {
         name: i.kind === 'general' ? `دعوة عامة · ${i.slug}` : i.inviteeName,
@@ -111,6 +120,11 @@ export default function InvitationsClient({ items: initial }: { items: Invitatio
     ),
     overlay: (
       <>
+        {rows.length > shown && (
+          <button type="button" onClick={() => setShown((n) => n + PAGE)} className="glass" style={{ alignSelf: 'center', height: 44, padding: '0 22px', borderRadius: 999, border: 0, color: '#0B3B41', fontWeight: 700, cursor: 'pointer' }}>
+            عرض المزيد ({(rows.length - shown).toLocaleString('ar-SA')} متبقية)
+          </button>
+        )}
         {toast && (
           <div role={toast.error ? 'alert' : 'status'} className="glass" style={{ position: 'fixed', insetInline: 16, bottom: 90, zIndex: 30, maxWidth: 360, margin: '0 auto', borderRadius: 18, padding: '12px 16px', textAlign: 'center', color: toast.error ? '#9B3B2E' : '#0B3B41' }}>
             {toast.text}

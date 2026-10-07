@@ -8,6 +8,7 @@ export const outbox: OutboxMessage[] = [];
 export async function sendEmail(msg: OutboxMessage): Promise<void> {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
+    if (outbox.length >= 200) outbox.shift(); // long-lived servers without email set up must not grow forever
     outbox.push(msg);
     if (process.env.NODE_ENV === 'development') console.info('[email]', msg.to, msg.subject);
     return;

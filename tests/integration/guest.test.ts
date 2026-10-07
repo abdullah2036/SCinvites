@@ -7,6 +7,7 @@ import { POST as postRsvp } from '@/app/api/i/[slug]/rsvp/route';
 import { GET as getIcs } from '@/app/api/i/[slug]/ics/route';
 import { resetDb, makeEvent, makeTemplate, makeInvitation, makeLeader } from '../setup/db';
 import { makeRequest, readSetCookies } from '../setup/request';
+import { LIMITS } from '@/lib/server/ratelimit';
 
 const params = (slug: string) => ({ params: Promise.resolve({ slug }) });
 const meta = { src: null, userAgent: 'vitest', referer: null };
@@ -136,10 +137,12 @@ describe('guest api', () => {
     expect(body).not.toMatch(/[^\r]\n/);
   });
 
-  it('rate-limits a flood of opens from one IP', async () => {
+  it('rate-limits a flood of opens from one IP, but lets a classroom behind one IP through', async () => {
     await makeInvitation({ template_id: templateId, slug: 'personal00000006' });
-    let status = 0;
-    for (let i = 0; i < 31; i++) status = (await postOpen(makeRequest('POST', '/api/i/personal00000006/open', { body: {}, ip: '4.4.4.4' }), params('personal00000006'))).status;
-    expect(status).toBe(429);
+    const open = () => postOpen(makeRequest('POST', '/api/i/personal00000006/open', { body: {}, ip: '4.4.4.4' }), params('personal00000006'));
+    const statuses = await Promise.all(Array.from({ length: 200 }, open));
+    expect(statuses.every((r) => r.status === 200)).toBe(true);
+    await sql`update rate_limits set count = ${LIMITS.guestOpenPerIpPerMinute} where key like 'guest-open:%'`;
+    expect((await open()).status).toBe(429);
   });
 });
