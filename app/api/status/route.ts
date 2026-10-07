@@ -15,14 +15,37 @@ export async function GET(req: Request) {
   const checks: Record<string, string> = {};
 
   try {
+    const t0 = performance.now();
     await sql`select 1`;
-    checks.database = 'ok';
+    checks.database = `ok (${Math.round(performance.now() - t0)} ms)`;
     const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from schema_migrations`;
     checks.tables = n >= MIGRATIONS ? 'ok' : `only ${n} of ${MIGRATIONS} migrations applied — run the "Migrate production database" action`;
   } catch {
     checks.database = 'cannot connect — check DATABASE_URL (Transaction pooler, port 6543, password filled in)';
     checks.tables = 'unknown';
   }
+
+  // Session mode (5432) gives every open client connection its own database connection, and suspended functions keep
+  // theirs, so the pool fills up and requests wait ("loads forever"). Functions must use the Transaction pooler.
+  try {
+    const port = new URL(process.env.DATABASE_URL ?? '').port;
+    checks.pooler = port === '6543' ? 'ok (transaction pooler)' : port === '5432' ? 'WRONG: session pooler (5432) — set DATABASE_URL to the Transaction pooler URL (port 6543)' : `port ${port || 'default'}`;
+  } catch {
+    checks.pooler = 'unknown';
+  }
+  if (checks.database.startsWith('ok')) {
+    try {
+      const [c] = await sql<{ total: number; active: number; stuck: number }[]>`
+        select count(*)::int as total,
+               count(*) filter (where state = 'active')::int as active,
+               count(*) filter (where state like 'idle in transaction%')::int as stuck
+        from pg_stat_activity where datname = current_database()`;
+      checks.connections = `${c.total} open, ${c.active} busy, ${c.stuck} stuck in a transaction`;
+    } catch {
+      checks.connections = 'unknown';
+    }
+  }
+  checks.server = `${process.env.VERCEL_REGION ?? 'local'}, up ${Math.round(process.uptime())} s`;
 
   const pw = checkOwnerHashFormat();
   checks.ownerPassword =
@@ -54,6 +77,6 @@ export async function GET(req: Request) {
 
   checks.email = process.env.RESEND_API_KEY ? 'ok' : 'not set up yet (test copies and alerts are not sent)';
 
-  const ok = ['database', 'tables', 'ownerPassword', 'ownerPath', 'appUrl'].every((k) => checks[k] === 'ok');
+  const ok = ['tables', 'ownerPassword', 'ownerPath', 'appUrl'].every((k) => checks[k] === 'ok') && checks.database.startsWith('ok') && !checks.pooler.startsWith('WRONG');
   return Response.json({ ok, checks }, { status: ok ? 200 : 503, headers: { 'cache-control': 'no-store' } });
 }

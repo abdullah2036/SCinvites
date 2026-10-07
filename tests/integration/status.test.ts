@@ -37,12 +37,26 @@ describe('/api/status', () => {
   it('reports each part as a plain check without exposing secrets', async () => {
     const res = await status(makeRequest('GET', '/api/status'));
     const body = await res.json();
-    expect(body.checks.database).toBe('ok');
+    expect(body.checks.database).toMatch(/^ok \(\d+ ms\)$/);
+    expect(body.checks.connections).toMatch(/^\d+ open, \d+ busy, \d+ stuck in a transaction$/);
     expect(body.checks.tables).toBe('ok');
     expect(body.checks.ownerPassword).toBe('ok');
     expect(body.checks.ownerPath).toBe('ok');
     expect(body.checks.appUrl).toBe('ok');
     expect(JSON.stringify(body)).not.toMatch(/b64:|\$2[aby]\$|test-studio|postgres:\/\//);
+  });
+  it('flags a session-pooler DATABASE_URL, which makes requests hang once the pool fills up', async () => {
+    const real = process.env.DATABASE_URL!;
+    try {
+      process.env.DATABASE_URL = 'postgres://u:p@aws-0-x.pooler.supabase.com:5432/postgres';
+      const body = await (await status(makeRequest('GET', '/api/status'))).json();
+      expect(body.checks.pooler).toMatch(/^WRONG: session pooler/);
+      expect(body.ok).toBe(false);
+      process.env.DATABASE_URL = 'postgres://u:p@aws-0-x.pooler.supabase.com:6543/postgres';
+      expect((await (await status(makeRequest('GET', '/api/status'))).json()).checks.pooler).toBe('ok (transaction pooler)');
+    } finally {
+      process.env.DATABASE_URL = real;
+    }
   });
   it('flags an APP_URL that does not match the address being visited', async () => {
     const res = await status(new Request('https://other-host.example/api/status'));
