@@ -123,7 +123,7 @@ export default function ApprovalsClient({ requests: initial }: { requests: Pendi
     empty: (
       <section className="glass s2" style={{ gridColumn: 'span 2', borderRadius: 30, padding: 32, display: 'grid', placeItems: 'center', textAlign: 'center', gap: 8, minHeight: 220 }}>
         <b style={{ fontSize: 18, color: '#0B3B41' }}>لا توجد طلبات بانتظارك</b>
-        <span style={{ fontSize: 14, color: '#4F6567' }}>تظهر هنا طلبات القادة قبل إرسال أي دعوة</span>
+        <span style={{ fontSize: 14, color: '#4F6567' }}>تظهر هنا قوائم الأسماء التي يرسلها القادة قبل إنشاء دعواتهم. طلبات دخول القادة الجدد في «الإعدادات»</span>
       </section>
     ),
   };

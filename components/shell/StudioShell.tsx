@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { S } from '@/components/boards/css';
 import LogoutButton from './LogoutButton';
+import PendingLeadersBanner from './PendingLeadersBanner';
 
 export type StudioNav = 'dashboard' | 'events' | 'invitations' | 'templates' | 'approvals' | 'analytics' | 'settings' | 'create';
 
@@ -54,12 +55,15 @@ export default function StudioShell({
   base,
   active,
   pending,
+  pendingJoins = 0,
   owner,
   children,
 }: {
   base: string;
   active: StudioNav;
   pending: number;
+  /** Leader access requests waiting in Settings. */
+  pendingJoins?: number;
   owner: { name: string; title: string };
   children: React.ReactNode;
 }) {
@@ -74,6 +78,8 @@ export default function StudioShell({
     ['analytics', 'الإحصائيات', `${base}/analytics`],
     ['settings', 'الإعدادات', `${base}/settings`],
   ];
+  // Gold counts: invitation requests on «طلبات الاعتماد», leader access requests on «الإعدادات».
+  const badgeFor = (key: StudioNav) => (key === 'approvals' ? pending : key === 'settings' ? pendingJoins : 0);
   const item = ([key, label, href]: [StudioNav, string, string]) => {
     const on = key === active;
     return (
@@ -90,9 +96,9 @@ export default function StudioShell({
         {on && <span style={S({ position: 'absolute', left: '-16px', top: '9px', width: '4px', height: '26px', borderRadius: '4px', background: '#13707B' })} />}
         {icon(key)}
         {label}
-        {key === 'approvals' && pending > 0 && (
+        {badgeFor(key) > 0 && (
           <span style={S({ marginRight: 'auto', minWidth: '20px', height: '20px', padding: '0 6px', borderRadius: '999px', background: '#C99A2E', color: '#0B2B30', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center' })}>
-            {toArabic(pending)}
+            {toArabic(badgeFor(key))}
           </span>
         )}
       </Link>
@@ -104,10 +110,15 @@ export default function StudioShell({
       href={href}
       aria-label={label}
       aria-current={key === active ? 'page' : undefined}
-      style={S({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', fontSize: '11px', textDecoration: 'none', ...(key === active ? { color: '#0B3B41', fontWeight: '700' } : { color: '#4F6567' }) })}
+      style={S({ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', fontSize: '11px', textDecoration: 'none', ...(key === active ? { color: '#0B3B41', fontWeight: '700' } : { color: '#4F6567' }) })}
     >
       {icon(key, 20)}
       {label}
+      {badgeFor(key) > 0 && (
+        <span style={S({ position: 'absolute', top: '-6px', left: '50%', marginLeft: '4px', minWidth: '18px', height: '18px', padding: '0 5px', borderRadius: '999px', background: '#C99A2E', color: '#0B2B30', fontSize: '11px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center' })}>
+          {toArabic(badgeFor(key))}
+        </span>
+      )}
     </Link>
   );
 
@@ -160,6 +171,7 @@ export default function StudioShell({
           {bottom('approvals', 'الاعتماد', `${base}/approvals`)}
           {bottom('settings', 'الإعدادات', `${base}/settings`)}
         </nav>
+        {active !== 'settings' && <PendingLeadersBanner count={pendingJoins} href={`${base}/settings`} />}
         {children}
       </div>
     </div>

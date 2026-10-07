@@ -39,7 +39,7 @@ export default function SettingsView({ v }: { v: any }) {
           ))}
           {v.extra}
         </section>
-        <section className="glass" style={S({ borderRadius: "30px", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" })}>
+        <section id="joins" className="glass" style={S({ borderRadius: "30px", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" })}>
           <h3 style={S({ margin: "0", fontSize: "17px", color: "#0B3B41" })}>
 طلبات دخول القادة
           </h3>
