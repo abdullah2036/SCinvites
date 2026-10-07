@@ -65,6 +65,26 @@ export async function revokeInvitation(id: string): Promise<void> {
   await audit('owner', 'invitation.revoke', id);
 }
 
+/** Owner corrects a personal invitation's name, organization or title (the link stays the same). */
+export async function updateInvitation(id: string, p: { inviteeName: string; inviteeOrg?: string | null; inviteeTitle?: string | null }): Promise<void> {
+  const [inv] = await sql<{ kind: string }[]>`select kind from invitations where id = ${id}`;
+  if (!inv) throw new AppError('not_found', 404, 'الدعوة غير موجودة');
+  if (inv.kind !== 'personal') throw new AppError('not_editable', 409, 'الدعوة العامة ليس لها اسم مدعو');
+  await sql`update invitations set invitee_name = ${p.inviteeName}, invitee_org = ${p.inviteeOrg ?? null}, invitee_title = ${p.inviteeTitle ?? null} where id = ${id}`;
+  await audit('owner', 'invitation.edit', id);
+}
+
+/** Deletes an invitation for good, with its registrations and answers (they also leave the statistics). */
+export async function deleteInvitation(id: string): Promise<void> {
+  const gone = await sql.begin(async (tx) => {
+    await tx`delete from rsvps where invitation_id = ${id}`;
+    await tx`delete from registrations where invitation_id = ${id}`;
+    return tx`delete from invitations where id = ${id} returning id`;
+  });
+  if (!gone.length) throw new AppError('not_found', 404, 'الدعوة غير موجودة');
+  await audit('owner', 'invitation.delete', id);
+}
+
 export async function sendTestCopy(id: string): Promise<void> {
   const [inv] = await sql<{ slug: string; title: string; invitee_name: string | null }[]>`
     select i.slug, e.title, i.invitee_name from invitations i
@@ -86,7 +106,7 @@ export async function sendTestCopy(id: string): Promise<void> {
 export async function listInvitations(filter: { q?: string; status?: InvitationStatus; kind?: InvitationKind; eventId?: string; limit?: number }): Promise<InvitationListItem[]> {
   const q = filter.q?.trim();
   const rows = await sql<(Omit<InvitationListItem, 'url'> & { createdAt: Date })[]>`
-    select i.id, i.slug, i.kind, i.status, i.color, i.stamp, t.track, i.invitee_name as "inviteeName", i.invitee_org as "inviteeOrg",
+    select i.id, i.slug, i.kind, i.status, i.color, i.stamp, t.track, i.invitee_name as "inviteeName", i.invitee_org as "inviteeOrg", i.invitee_title as "inviteeTitle",
            e.title as "eventTitle", i.created_at as "createdAt",
            (select count(*)::int from registrations r where r.invitation_id = i.id) as registrations
     from invitations i join templates t on t.id = i.template_id join events e on e.id = t.event_id

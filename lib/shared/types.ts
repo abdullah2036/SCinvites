@@ -38,6 +38,7 @@ export type InvitationListItem = {
   stamp: string;
   inviteeName: string | null;
   inviteeOrg: string | null;
+  inviteeTitle: string | null;
   eventTitle: string;
   createdAt: string;
   registrations: number;

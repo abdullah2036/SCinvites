@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import LeaderView from '@/components/boards/LeaderView';
-import LogoutButton from '@/components/shell/LogoutButton';
 import AutoRefresh from '@/components/shell/AutoRefresh';
 import { PALETTE, TRACK_INFO } from '@/components/invitation/palette';
 import { taggedUrl } from '@/lib/shared/source';
@@ -21,12 +20,35 @@ const STATUS: Record<string, [string, string, string]> = {
 
 type Link = { name: string; org: string | null; url: string };
 
-export default function LeaderClient({ leader, templates, requests }: { leader: { name: string }; templates: TemplateOption[]; requests: LeaderRequestItem[] }) {
+export default function LeaderClient({ leader, templates, requests }: { leader: { name: string; email: string }; templates: TemplateOption[]; requests: LeaderRequestItem[] }) {
   const router = useRouter();
   const [links, setLinks] = useState<{ title: string; items: Link[] } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [account, setAccount] = useState(false);
+  const [nameDraft, setNameDraft] = useState(leader.name);
+  const [accountMsg, setAccountMsg] = useState<{ text: string; error?: boolean } | null>(null);
+  const [accountBusy, setAccountBusy] = useState(false);
+
+  async function saveName() {
+    setAccountBusy(true);
+    setAccountMsg(null);
+    const res = await fetch('/api/leader/me', { signal: timeoutSignal(), method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: nameDraft }) }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    setAccountBusy(false);
+    if (!res?.ok) return setAccountMsg({ text: data?.error?.message ?? 'تعذر الحفظ، حاول مرة أخرى', error: true });
+    setNameDraft(data.name);
+    setAccountMsg({ text: 'حُفظ الاسم' });
+    router.refresh();
+  }
+
+  async function signOut() {
+    setAccountBusy(true);
+    await fetch('/api/leader/logout', { signal: timeoutSignal(), method: 'POST' }).catch(() => null);
+    router.replace('/');
+    router.refresh();
+  }
 
   async function openLinks(r: LeaderRequestItem) {
     setBusyId(r.id);
@@ -54,7 +76,13 @@ export default function LeaderClient({ leader, templates, requests }: { leader: 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const a = (e.target as Element | null)?.closest?.('a[href^="#"]');
-      const el = a && document.getElementById(a.getAttribute('href')!.slice(1));
+      if (!a) return;
+      if (a.getAttribute('href') === '#account') {
+        e.preventDefault();
+        setAccount(true);
+        return;
+      }
+      const el = document.getElementById(a.getAttribute('href')!.slice(1));
       if (!el) return;
       e.preventDefault();
       const r = el.getBoundingClientRect();
@@ -104,9 +132,36 @@ export default function LeaderClient({ leader, templates, requests }: { leader: 
             {noTemplatesText}
           </div>
         )}
-        <div id="account" style={{ position: 'fixed', insetInlineStart: 16, bottom: 92, zIndex: 25 }}>
-          <LogoutButton endpoint="/api/leader/logout" />
-        </div>
+        {account && (
+          <div role="dialog" aria-modal="true" aria-label="حسابي" onClick={() => setAccount(false)} style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(7,37,41,.35)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', display: 'grid', placeItems: 'center', padding: 16 }}>
+            <div onClick={(e) => e.stopPropagation()} className="glass inA" style={{ width: 'min(420px, 100%)', borderRadius: 28, padding: 22, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <b style={{ fontSize: 18, color: '#0B3B41' }}>حسابي</b>
+                <button type="button" onClick={() => setAccount(false)} aria-label="إغلاق" style={{ border: 0, background: 'transparent', fontSize: 22, cursor: 'pointer', color: '#4F6567' }}>
+                  ×
+                </button>
+              </div>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: '#3E5456' }}>
+                اسمك كما يظهر لصاحبة المنصة
+                <input className="field" value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} style={{ height: 46, borderRadius: 999, padding: '0 16px', border: '1px solid rgba(255,255,255,.95)', background: 'rgba(255,255,255,.85)', fontSize: 15 }} />
+              </label>
+              <span style={{ fontSize: 13, color: '#4F6567' }}>
+                البريد: <span dir="ltr">{leader.email}</span>
+              </span>
+              {accountMsg && (
+                <span role={accountMsg.error ? 'alert' : 'status'} style={{ fontSize: 13, color: accountMsg.error ? '#9B3B2E' : '#13707B' }}>
+                  {accountMsg.text}
+                </span>
+              )}
+              <button type="button" disabled={accountBusy || nameDraft.trim() === leader.name} onClick={() => void saveName()} style={{ height: 46, borderRadius: 999, border: 0, background: 'linear-gradient(160deg,#13707B,#0B3B41)', color: '#fff', fontWeight: 700, cursor: 'pointer', opacity: accountBusy || nameDraft.trim() === leader.name ? 0.55 : 1 }}>
+                حفظ الاسم
+              </button>
+              <button type="button" disabled={accountBusy} onClick={() => void signOut()} style={{ height: 46, borderRadius: 999, border: '1px solid rgba(155,59,46,.35)', background: 'transparent', color: '#9B3B2E', cursor: 'pointer' }}>
+                تسجيل الخروج
+              </button>
+            </div>
+          </div>
+        )}
         {error && (
           <div role="alert" className="glass" style={{ position: 'fixed', insetInline: 16, bottom: 92, zIndex: 30, borderRadius: 18, padding: '12px 16px', color: '#9B3B2E', textAlign: 'center' }}>
             {error}

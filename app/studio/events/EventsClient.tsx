@@ -79,6 +79,21 @@ export default function EventsClient({ events, base }: { events: EventCard[]; ba
     router.refresh();
   }
 
+  async function remove() {
+    if (!form?.id || !confirm(`حذف الفعالية «${form.title}» نهائيًا؟`)) return;
+    setBusy(true);
+    setError('');
+    const res = await fetch(`/api/events/${form.id}`, { signal: timeoutSignal(), method: 'DELETE' }).catch(() => null);
+    setBusy(false);
+    if (!res?.ok) {
+      const e = await res?.json().catch(() => null);
+      setError(e?.error?.message ?? 'تعذر الحذف');
+      return;
+    }
+    setForm(null);
+    router.refresh();
+  }
+
   const statusOf = (e: EventCard) => eventPhase(e);
 
   const v = {
@@ -205,6 +220,11 @@ export default function EventsClient({ events, base }: { events: EventCard[]; ba
               إلغاء
             </button>
           </div>
+          {form.id && (
+            <button type="button" onClick={() => void remove()} disabled={busy} style={{ height: 40, borderRadius: 999, border: '1px solid rgba(155,59,46,.35)', background: 'transparent', color: '#9B3B2E', cursor: 'pointer' }}>
+              حذف الفعالية
+            </button>
+          )}
         </div>
       </div>
     ),

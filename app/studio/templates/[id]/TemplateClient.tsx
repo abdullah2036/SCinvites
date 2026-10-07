@@ -1,10 +1,10 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import TemplateView from '@/components/boards/TemplateView';
 import Invitation from '@/components/invitation/Invitation';
 import { PALETTE, TRACK_INFO, paletteVars } from '@/components/invitation/palette';
-import { riyadhDay } from '@/lib/shared/dates';
 import { TRACKS, COLORS, STAMPS, type Color, type Track, type GuestView, type PlaceType } from '@/lib/shared/types';
 import { timeoutSignal } from '@/lib/shared/timeout';
 
@@ -27,8 +27,6 @@ export type EventChoice = { id: string; status: 'draft' | 'active' | 'archived';
 
 const field: React.CSSProperties = { height: 44, borderRadius: 999, padding: '0 14px', border: '1px solid rgba(255,255,255,.95)', background: 'rgba(255,255,255,.78)', color: '#18292C', fontSize: 14, width: '100%', boxSizing: 'border-box' };
 const label: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: '#3E5456' };
-const toDay = (iso: string | null) => riyadhDay(iso);
-const fromDay = (d: string, endOfDay = false) => (d ? new Date(`${d}T${endOfDay ? '23:59:59' : '00:00:00'}+03:00`).toISOString() : null);
 
 async function call(url: string, method: string, body?: unknown) {
   const res = await fetch(url, { signal: timeoutSignal(60_000), method, headers: body instanceof FormData ? undefined : { 'content-type': 'application/json' }, body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined }).catch(() => null);
@@ -38,6 +36,7 @@ async function call(url: string, method: string, body?: unknown) {
 }
 
 export default function TemplateClient({ initial, events, base }: { initial: TemplateDraft; events: EventChoice[]; base: string }) {
+  const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [t, setT] = useState(initial);
   const [previewColor, setPreviewColor] = useState<Color>(initial.allowedColors[0] ?? 'night');
@@ -115,6 +114,19 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
     } catch (e) {
       setError((e as Error).message);
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!t.id || !confirm('حذف هذا القالب نهائيًا؟')) return;
+    setBusy(true);
+    setError('');
+    try {
+      await call(`/api/templates/${t.id}`, 'DELETE');
+      router.push(`${base}/templates`);
+    } catch (e) {
+      setError((e as Error).message);
       setBusy(false);
     }
   }
@@ -232,6 +244,11 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
         <p role="status" style={{ margin: 0, fontSize: 12, lineHeight: 1.7, color: visibility.warn ? '#9B3B2E' : '#3E5456' }}>
           {visibility.text}
         </p>
+        {t.id && (
+          <button type="button" disabled={busy} onClick={() => void remove()} style={{ alignSelf: 'flex-start', height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid rgba(155,59,46,.35)', background: 'transparent', color: '#9B3B2E', fontSize: 13, cursor: 'pointer' }}>
+            حذف القالب
+          </button>
+        )}
         <label style={label}>
           آخر موعد للطلبات (أيام قبل الفعالية)
           <input type="number" min={0} max={60} value={t.requestDeadlineDays} onChange={(e) => set({ requestDeadlineDays: Math.max(0, Math.min(60, Number(e.target.value) || 0)) })} className="field" style={field} />

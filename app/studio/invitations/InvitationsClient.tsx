@@ -63,13 +63,36 @@ export default function InvitationsClient({ items: initial }: { items: Invitatio
     return items.filter((i) => (!st || i.status === st) && (!term || `${i.inviteeName ?? ''} ${i.inviteeOrg ?? ''} ${i.eventTitle} ${i.slug}`.includes(term)));
   }, [items, q, f]);
 
-  async function revoke(i: InvitationListItem) {
-    if (!confirm(`إلغاء دعوة ${i.inviteeName ?? 'الأعضاء'}؟ سيعرض الرابط «هذه الدعوة لم تعد متاحة»`)) return;
-    const res = await fetch(`/api/invitations/${i.id}`, { signal: timeoutSignal(), method: 'DELETE' }).catch(() => null);
-    if (!res?.ok) return say('تعذر الإلغاء، حاولي مرة أخرى', true);
-    setItems((all) => all.map((x) => (x.id === i.id ? { ...x, status: 'revoked' } : x)));
-    say('أُلغيت الدعوة');
+  // «إدارة الدعوة»: correct the name, cancel the link, or delete it for good.
+  const [manage, setManage] = useState<{ item: InvitationListItem; name: string; org: string; title: string } | null>(null);
+  const [manageBusy, setManageBusy] = useState(false);
+
+  async function act(url: string, init: RequestInit, ok: string, update: (all: InvitationListItem[]) => InvitationListItem[]) {
+    setManageBusy(true);
+    const res = await fetch(url, { signal: timeoutSignal(), ...init }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    setManageBusy(false);
+    if (!res?.ok) return say(data?.error?.message ?? 'تعذر الحفظ، حاولي مرة أخرى', true);
+    setItems(update);
+    setManage(null);
+    say(ok);
   }
+  const saveEdit = () =>
+    manage &&
+    act(
+      `/api/invitations/${manage.item.id}`,
+      { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ inviteeName: manage.name, inviteeOrg: manage.org, inviteeTitle: manage.title }) },
+      'حُفظت التعديلات',
+      (all) => all.map((x) => (x.id === manage.item.id ? { ...x, inviteeName: manage.name.trim(), inviteeOrg: manage.org.trim() || null, inviteeTitle: manage.title.trim() || null } : x)),
+    );
+  const revoke = () =>
+    manage &&
+    confirm(`إلغاء دعوة ${manage.item.inviteeName ?? 'الأعضاء'}؟ سيعرض الرابط «هذه الدعوة لم تعد متاحة»`) &&
+    act(`/api/invitations/${manage.item.id}`, { method: 'DELETE' }, 'أُلغيت الدعوة', (all) => all.map((x) => (x.id === manage.item.id ? { ...x, status: 'revoked' } : x)));
+  const remove = () =>
+    manage &&
+    confirm(`حذف دعوة ${manage.item.inviteeName ?? 'الأعضاء'} نهائيًا؟ يُحذف معها التسجيل والردود ولا يمكن التراجع`) &&
+    act(`/api/invitations/${manage.item.id}?permanent=1`, { method: 'DELETE' }, 'حُذفت الدعوة', (all) => all.filter((x) => x.id !== manage.item.id));
 
   async function openPreview(i: InvitationListItem) {
     const res = await fetch(`/api/i/${i.slug}`, { signal: timeoutSignal() }).catch(() => null);
@@ -107,13 +130,12 @@ export default function InvitationsClient({ items: initial }: { items: Invitatio
         sc: st[1],
         sb: st[2],
         date: day(i.createdAt),
-        revoked: i.status === 'revoked',
         preview: () => openPreview(i),
         copy: async () => {
           await navigator.clipboard?.writeText(taggedUrl(i.url, 'link')).catch(() => {});
           say('نُسخ الرابط');
         },
-        revoke: () => revoke(i),
+        manage: () => setManage({ item: i, name: i.inviteeName ?? '', org: i.inviteeOrg ?? '', title: i.inviteeTitle ?? '' }),
       };
     }),
     empty: rows.length ? null : (
@@ -129,6 +151,40 @@ export default function InvitationsClient({ items: initial }: { items: Invitatio
         {toast && (
           <div role={toast.error ? 'alert' : 'status'} className="glass" style={{ position: 'fixed', insetInline: 16, bottom: 90, zIndex: 30, maxWidth: 360, margin: '0 auto', borderRadius: 18, padding: '12px 16px', textAlign: 'center', color: toast.error ? '#9B3B2E' : '#0B3B41' }}>
             {toast.text}
+          </div>
+        )}
+        {manage && (
+          <div role="dialog" aria-modal="true" aria-label="إدارة الدعوة" onClick={() => setManage(null)} style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(7,37,41,.35)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', display: 'grid', placeItems: 'center', padding: 16 }}>
+            <div onClick={(e) => e.stopPropagation()} className="glass inA" style={{ width: 'min(460px, 100%)', borderRadius: 28, padding: 22, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <b style={{ fontSize: 18, color: '#0B3B41' }}>{manage.item.kind === 'general' ? `دعوة عامة · ${manage.item.slug}` : 'تعديل الدعوة'}</b>
+                <button type="button" onClick={() => setManage(null)} aria-label="إغلاق" style={{ border: 0, background: 'transparent', fontSize: 22, cursor: 'pointer', color: '#4F6567' }}>
+                  ×
+                </button>
+              </div>
+              <span style={{ fontSize: 13, color: '#4F6567' }}>{manage.item.eventTitle}</span>
+              {manage.item.kind === 'personal' && (
+                <>
+                  {(['name', 'org', 'title'] as const).map((k) => (
+                    <label key={k} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#3E5456' }}>
+                      {k === 'name' ? 'اسم المدعو' : k === 'org' ? 'الجهة (اختياري)' : 'المسمى (اختياري)'}
+                      <input className="field" value={manage[k]} onChange={(e) => setManage({ ...manage, [k]: e.target.value })} style={{ height: 44, borderRadius: 999, padding: '0 14px', border: '1px solid rgba(255,255,255,.95)', background: 'rgba(255,255,255,.85)', fontSize: 14 }} />
+                    </label>
+                  ))}
+                  <button type="button" disabled={manageBusy || manage.name.trim().length < 1} onClick={() => void saveEdit()} style={{ height: 46, borderRadius: 999, border: 0, background: 'linear-gradient(160deg,#13707B,#0B3B41)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                    حفظ التعديلات
+                  </button>
+                </>
+              )}
+              {manage.item.status !== 'revoked' && (
+                <button type="button" disabled={manageBusy} onClick={() => void revoke()} style={{ height: 44, borderRadius: 999, border: '1px solid rgba(19,112,123,.3)', background: 'transparent', color: '#0B3B41', cursor: 'pointer' }}>
+                  إلغاء الدعوة (يبقى الرابط ويعرض أنها لم تعد متاحة)
+                </button>
+              )}
+              <button type="button" disabled={manageBusy} onClick={() => void remove()} style={{ height: 44, borderRadius: 999, border: '1px solid rgba(155,59,46,.35)', background: 'transparent', color: '#9B3B2E', cursor: 'pointer' }}>
+                حذف نهائيًا
+              </button>
+            </div>
           </div>
         )}
         {preview && (

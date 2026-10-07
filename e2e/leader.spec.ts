@@ -95,3 +95,25 @@ test('a leader with no templates yet sees why, and the menu does not throw the p
   }
   await expect(page).toHaveURL(/\/leader$/); // no #hash jumps
 });
+
+test('«حسابي» lets a leader change their name and sign out', async ({ page }) => {
+  await reset();
+  await db`insert into leaders (name, email, status, approved_at) values ('اسم قديم', 's443000888@uqu.edu.sa', 'approved', now())`;
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await page.getByLabel('بريدك الجامعي').fill('s443000888@uqu.edu.sa');
+  await page.getByRole('button', { name: 'دخول', exact: true }).click();
+  await expect(page).toHaveURL(/\/leader$/);
+  await page.waitForLoadState('networkidle');
+  await page.getByRole('link', { name: 'حسابي' }).last().dispatchEvent('click');
+  const account = page.getByRole('dialog', { name: 'حسابي' });
+  await expect(account.getByText('s443000888@uqu.edu.sa')).toBeVisible();
+  await account.getByLabel(/اسمك/).fill('ريم الحربي');
+  await account.getByRole('button', { name: 'حفظ الاسم' }).click();
+  await expect(account.getByText('حُفظ الاسم')).toBeVisible();
+  expect((await db`select name from leaders where email = 's443000888@uqu.edu.sa'`)[0].name).toBe('ريم الحربي');
+  await account.getByRole('button', { name: 'تسجيل الخروج' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto('/leader');
+  await expect(page).toHaveURL(/\/$/); // signed out: back to the home page
+});

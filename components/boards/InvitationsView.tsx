@@ -92,10 +92,10 @@ export default function InvitationsView({ v }: { v: any }) {
                   <path d="M5 15V5a2 2 0 0 1 2-2h10" />
                 </svg>
               </button>
-              <button type="button" aria-label="إلغاء الدعوة" onClick={r.revoke} disabled={r.revoked} style={S({ width: "34px", height: "34px", borderRadius: "50%", border: "0", background: "rgba(255,255,255,.75)", cursor: "pointer" })}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8E3B2E" strokeWidth="1.8" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M6 6l12 12" />
+              <button type="button" aria-label="إدارة الدعوة" onClick={r.manage} style={S({ width: "34px", height: "34px", borderRadius: "50%", border: "0", background: "rgba(255,255,255,.75)", cursor: "pointer" })}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0B3B41" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                  <path d="M4 20h4L19 9l-4-4L4 16z" />
+                  <path d="M13 7l4 4" />
                 </svg>
               </button>
             </span>

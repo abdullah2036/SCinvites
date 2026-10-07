@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import { sql } from './db';
+import { audit } from './audit';
 import type { EventInput, EventPatch } from '@/lib/shared/schemas';
 import { AppError, type PlaceType, type Track } from '@/lib/shared/types';
 
@@ -62,4 +63,13 @@ export async function listEvents(filter: { track?: Track } = {}): Promise<EventL
     from events e
     where e.status <> 'archived' ${filter.track ? sql`and e.track = ${filter.track}` : sql``}
     order by e.starts_at desc`;
+}
+
+/** Deletes an event that has no templates; otherwise the owner archives it (sent invitations keep working). */
+export async function deleteEvent(id: string): Promise<void> {
+  const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from templates where event_id = ${id}`;
+  if (n > 0) throw new AppError('event_in_use', 409, 'لهذه الفعالية قوالب. احذفي قوالبها أولًا، أو اختاري الحالة «مؤرشفة» لإخفائها');
+  const rows = await sql`delete from events where id = ${id} returning id`;
+  if (!rows.length) throw new AppError('not_found', 404, 'الفعالية غير موجودة');
+  await audit('owner', 'event.delete', id);
 }

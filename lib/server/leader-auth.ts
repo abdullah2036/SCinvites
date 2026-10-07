@@ -97,3 +97,11 @@ export async function listLeaders(): Promise<LeaderListItem[]> {
     order by case status when 'pending' then 0 when 'approved' then 1 else 2 end, name`;
   return rows.map((r) => ({ ...r, createdAt: new Date(r.createdAt).toISOString() }));
 }
+
+export async function updateLeaderName(id: string, raw: string): Promise<string> {
+  const name = raw.replace(/[​-‏‪-‮⁦-⁩﻿]/g, '').replace(/\s+/g, ' ').trim();
+  if (name.length < 2 || name.length > 80) throw new AppError('invalid_input', 400, 'اكتب اسمك (حرفان على الأقل)');
+  await sql`update leaders set name = ${name} where id = ${id}`;
+  await audit('leader', 'leader.rename', id);
+  return name;
+}

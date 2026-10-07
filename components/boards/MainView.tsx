@@ -506,11 +506,11 @@ Au
           <label htmlFor="nm" style={S({ fontSize: "13px", color: "#2C4245" })}>
 اسمك (أول مرة فقط)
           </label>
-          <input id="nm" className="field" value={v.name} onChange={v.onName} autoComplete="name" placeholder="الاسم كما يظهر للنادي" style={S({ height: "54px", border: "1px solid rgba(255,255,255,.95)", borderRadius: "999px", padding: "0 22px", fontFamily: "TS, sans-serif", fontSize: "16px", background: "rgba(255,255,255,.78)", color: "#18292C" })} />
+          <input id="nm" className="field" value={v.name} onChange={v.onName} onKeyDown={v.enterKey} autoComplete="name" placeholder="الاسم كما يظهر للنادي" style={S({ height: "54px", border: "1px solid rgba(255,255,255,.95)", borderRadius: "999px", padding: "0 22px", fontFamily: "TS, sans-serif", fontSize: "16px", background: "rgba(255,255,255,.78)", color: "#18292C" })} />
           <label htmlFor="em" style={S({ fontSize: "13px", color: "#2C4245" })}>
 بريدك الجامعي
           </label>
-          <input id="em" className="field" type="email" value={v.mail} onChange={v.onMail} placeholder="s4xxxxxxxx@uqu.edu.sa" style={S({ height: "54px", border: `1px solid ${v.border}`, borderRadius: "999px", padding: "0 22px", fontFamily: "TS, sans-serif", fontSize: "16px", background: "rgba(255,255,255,.78)", color: "#18292C", direction: "ltr", textAlign: "right" })} />
+          <input id="em" className="field" type="email" value={v.mail} onChange={v.onMail} onKeyDown={v.enterKey} enterKeyHint="go" placeholder="s4xxxxxxxx@uqu.edu.sa" style={S({ height: "54px", border: `1px solid ${v.border}`, borderRadius: "999px", padding: "0 22px", fontFamily: "TS, sans-serif", fontSize: "16px", background: "rgba(255,255,255,.78)", color: "#18292C", direction: "ltr", textAlign: "right" })} />
           <span style={S({ fontSize: "12px", color: v.msgColor })}>
 {v.msg}
           </span>

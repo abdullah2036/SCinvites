@@ -120,6 +120,9 @@ export default function MainClient() {
     stepMail: step === 'mail',
     stepWait: step === 'wait',
     goLabel: 'دخول',
+    enterKey: (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') void ask();
+    },
     waitTitle: status === 'revoked' ? 'تم إيقاف هذا الحساب' : 'وصل طلبك',
     waitText:
       status === 'revoked'

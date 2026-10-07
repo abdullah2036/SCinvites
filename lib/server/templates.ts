@@ -158,3 +158,28 @@ export async function listGalleryTemplates(filter: { track?: Track; stamp?: stri
       ${filter.upcoming ? sql`and coalesce(e.ends_at, e.starts_at) > now() - interval '1 day'` : sql``}
     order by t.approved_at desc`;
 }
+
+/**
+ * Deletes a template with all its versions, but only if nothing was made from it (an invitation or a leader request
+ * would lose its design). Otherwise the owner archives the event instead.
+ */
+export async function deleteTemplate(id: string): Promise<void> {
+  await sql.begin(async (tx) => {
+    const line = await tx<{ id: string; version: number }[]>`
+      with recursive up as (
+        select id, supersedes_id from templates where id = ${id}
+        union select t.id, t.supersedes_id from templates t join up on t.id = up.supersedes_id
+      ), down as (
+        select id from templates where id = ${id}
+        union select t.id from templates t join down on t.supersedes_id = down.id
+      )
+      select t.id, t.version from templates t where t.id in (select id from up union select id from down) order by t.version desc`;
+    if (!line.length) throw new AppError('not_found', 404, 'القالب غير موجود');
+    const ids = line.map((r) => r.id);
+    const [{ used }] = await tx<{ used: boolean }[]>`
+      select exists (select 1 from invitations where template_id = any(${ids})) or exists (select 1 from leader_requests where template_id = any(${ids})) as used`;
+    if (used) throw new AppError('template_in_use', 409, 'هذا القالب استُخدم في دعوات أو طلبات فلا يمكن حذفه. لإخفائه عن القادة اجعلي الفعالية «مؤرشفة»');
+    for (const r of line) await tx`delete from templates where id = ${r.id}`; // newest first: versions point at older ones
+  });
+  await audit('owner', 'template.delete', id);
+}
