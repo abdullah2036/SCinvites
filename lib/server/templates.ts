@@ -22,6 +22,7 @@ export type TemplateRow = {
 };
 
 export type TemplateWithEvent = TemplateRow & {
+  event_status: 'draft' | 'active' | 'archived';
   event_title: string;
   event_subtitle: string | null;
   event_latin_title: string | null;
@@ -32,10 +33,10 @@ export type TemplateWithEvent = TemplateRow & {
   event_place_url: string | null;
 };
 
-const withEvent = () => sql`
-  select t.*, e.title as event_title, e.subtitle as event_subtitle, e.latin_title as event_latin_title,
+const withEvent = (extra = sql``) => sql`
+  select t.*, e.status as event_status, e.title as event_title, e.subtitle as event_subtitle, e.latin_title as event_latin_title,
          e.starts_at as event_starts_at, e.ends_at as event_ends_at, e.place_type as event_place_type,
-         e.place_name as event_place_name, e.place_url as event_place_url
+         e.place_name as event_place_name, e.place_url as event_place_url ${extra}
   from templates t join events e on e.id = t.event_id`;
 
 export async function createTemplate(input: z.infer<typeof TemplateInput>): Promise<TemplateRow> {
@@ -99,18 +100,27 @@ export async function approveTemplate(id: string): Promise<TemplateRow> {
 }
 
 /** Owner list: current versions (drafts and approved), newest first. */
-export async function listTemplates(): Promise<TemplateWithEvent[]> {
-  return sql<TemplateWithEvent[]>`${withEvent()} where t.status <> 'superseded' order by t.created_at desc`;
+export async function listTemplates(now = new Date()): Promise<(TemplateWithEvent & { hidden_reason: HiddenReason })[]> {
+  return sql<(TemplateWithEvent & { hidden_reason: HiddenReason })[]>`
+    ${withEvent(sql`, ${hiddenReason(now)} as hidden_reason`)}
+    where t.status <> 'superseded' order by t.created_at desc`;
 }
+
+/** Why leaders can't see a template right now (null = they can). The one rule for both the leader page and the owner's list. */
+export type HiddenReason = 'not_approved' | 'event_draft' | 'event_archived' | 'not_yet' | 'ended' | null;
+const hiddenReason = (now: Date) => sql`
+  case when t.status <> 'approved' then 'not_approved'
+       when e.status = 'draft' then 'event_draft'
+       when e.status = 'archived' then 'event_archived'
+       when t.available_from is not null and t.available_from > ${now} then 'not_yet'
+       when t.available_to is not null and t.available_to < ${now} then 'ended'
+  end`;
 
 /** Every approved leader sees every approved template of an active event within its availability dates. */
 export async function templatesVisibleToLeaders(now = new Date()): Promise<TemplateWithEvent[]> {
   return sql<TemplateWithEvent[]>`
     ${withEvent()}
-    where t.status = 'approved'
-      and (t.available_from is null or t.available_from <= ${now})
-      and (t.available_to is null or t.available_to >= ${now})
-      and e.status = 'active'
+    where ${hiddenReason(now)} is null
     order by e.starts_at asc`;
 }
 

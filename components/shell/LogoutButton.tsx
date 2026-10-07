@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { timeoutSignal } from '@/lib/shared/timeout';
 
 export default function LogoutButton({ endpoint = '/api/owner/logout' }: { endpoint?: string }) {
   const router = useRouter();
@@ -10,7 +11,7 @@ export default function LogoutButton({ endpoint = '/api/owner/logout' }: { endpo
       aria-label="تسجيل الخروج"
       title="تسجيل الخروج"
       onClick={async () => {
-        await fetch(endpoint, { method: 'POST' }).catch(() => null);
+        await fetch(endpoint, { signal: timeoutSignal(), method: 'POST' }).catch(() => null);
         router.replace('/');
         router.refresh();
       }}

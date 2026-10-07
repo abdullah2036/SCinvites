@@ -14,6 +14,7 @@ test('a new access request is announced on any open owner page and can be approv
   const other = await browser.newContext({ baseURL: E2E.baseURL });
   const leader = await other.newPage();
   await leader.goto('/');
+  await leader.waitForLoadState('networkidle');
   await leader.getByLabel('اسمك').fill('هند');
   await leader.getByLabel('بريدك الجامعي').fill('s443000777@uqu.edu.sa');
   await leader.getByRole('button', { name: 'دخول', exact: true }).click();

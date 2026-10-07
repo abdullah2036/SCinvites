@@ -6,6 +6,7 @@ import Invitation from '@/components/invitation/Invitation';
 import { TRACK_INFO } from '@/components/invitation/palette';
 import { taggedUrl } from '@/lib/shared/source';
 import type { GuestView, InvitationListItem, InvitationStatus } from '@/lib/shared/types';
+import { timeoutSignal } from '@/lib/shared/timeout';
 
 const TILE: Record<string, string> = { club: '#13707B', space: '#0B3B41', chem: '#2F8C8A', phys: '#6FB7B8', bio: '#4F8F7E', math: '#C99A2E', sport: '#E0B95A' };
 const FILTERS: [string, InvitationStatus | null, string][] = [
@@ -64,14 +65,14 @@ export default function InvitationsClient({ items: initial }: { items: Invitatio
 
   async function revoke(i: InvitationListItem) {
     if (!confirm(`إلغاء دعوة ${i.inviteeName ?? 'الأعضاء'}؟ سيعرض الرابط «هذه الدعوة لم تعد متاحة»`)) return;
-    const res = await fetch(`/api/invitations/${i.id}`, { method: 'DELETE' }).catch(() => null);
+    const res = await fetch(`/api/invitations/${i.id}`, { signal: timeoutSignal(), method: 'DELETE' }).catch(() => null);
     if (!res?.ok) return say('تعذر الإلغاء، حاولي مرة أخرى', true);
     setItems((all) => all.map((x) => (x.id === i.id ? { ...x, status: 'revoked' } : x)));
     say('أُلغيت الدعوة');
   }
 
   async function openPreview(i: InvitationListItem) {
-    const res = await fetch(`/api/i/${i.slug}`).catch(() => null);
+    const res = await fetch(`/api/i/${i.slug}`, { signal: timeoutSignal() }).catch(() => null);
     if (!res?.ok) return say('تعذر فتح المعاينة', true);
     setPreview(await res.json());
   }

@@ -5,6 +5,7 @@ import type { Analytics, Totals } from '@/lib/server/analytics';
 import type { Semester } from '@/lib/server/semesters';
 import { SOURCE_LABELS } from '@/lib/shared/source';
 import { toArabicDigits } from '@/lib/shared/dates';
+import { timeoutSignal } from '@/lib/shared/timeout';
 
 const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 /** Sequential teal ramp from the design tokens (light → dark). 0 = empty cell. */
@@ -38,7 +39,7 @@ export default function AnalyticsClient({ initial, semesters: initialSemesters, 
       const q = new URLSearchParams();
       if (s) q.set('semester', s);
       if (e) q.set('event', e);
-      const res = await fetch(`/api/analytics?${q}`).catch(() => null);
+      const res = await fetch(`/api/analytics?${q}`, { signal: timeoutSignal() }).catch(() => null);
       if (!res?.ok) {
         setError('تعذر تحميل الإحصائيات، حاولي مرة أخرى');
         return;
@@ -325,7 +326,7 @@ function SemesterForm({ onSaved }: { onSaved: (s: Semester) => void }) {
   const [msg, setMsg] = useState('');
   async function save() {
     setMsg('');
-    const res = await fetch('/api/semesters', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, startsOn, endsOn }) }).catch(() => null);
+    const res = await fetch('/api/semesters', { signal: timeoutSignal(), method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, startsOn, endsOn }) }).catch(() => null);
     const body = await res?.json().catch(() => null);
     if (!res?.ok) {
       setMsg(body?.error?.message ?? 'تعذر الحفظ');

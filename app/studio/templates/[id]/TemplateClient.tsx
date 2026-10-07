@@ -6,6 +6,7 @@ import Invitation from '@/components/invitation/Invitation';
 import { PALETTE, TRACK_INFO, paletteVars } from '@/components/invitation/palette';
 import { riyadhDay } from '@/lib/shared/dates';
 import { TRACKS, COLORS, STAMPS, type Color, type Track, type GuestView, type PlaceType } from '@/lib/shared/types';
+import { timeoutSignal } from '@/lib/shared/timeout';
 
 export type TemplateDraft = {
   id: string | null;
@@ -30,7 +31,7 @@ const toDay = (iso: string | null) => riyadhDay(iso);
 const fromDay = (d: string, endOfDay = false) => (d ? new Date(`${d}T${endOfDay ? '23:59:59' : '00:00:00'}+03:00`).toISOString() : null);
 
 async function call(url: string, method: string, body?: unknown) {
-  const res = await fetch(url, { method, headers: body instanceof FormData ? undefined : { 'content-type': 'application/json' }, body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined }).catch(() => null);
+  const res = await fetch(url, { signal: timeoutSignal(60_000), method, headers: body instanceof FormData ? undefined : { 'content-type': 'application/json' }, body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined }).catch(() => null);
   const data = await res?.json().catch(() => null);
   if (!res?.ok) throw new Error(data?.error?.message ?? 'تعذر الحفظ، حاولي مرة أخرى');
   return data;

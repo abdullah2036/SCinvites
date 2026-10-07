@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import SettingsView from '@/components/boards/SettingsView';
 import type { Settings } from '@/lib/server/settings';
 import type { LeaderListItem } from '@/lib/server/leader-auth';
+import { timeoutSignal } from '@/lib/shared/timeout';
 
 const input: React.CSSProperties = { height: 44, borderRadius: 999, padding: '0 16px', border: '1px solid rgba(255,255,255,.95)', background: 'rgba(255,255,255,.78)', color: '#18292C', fontSize: 14, width: '100%', boxSizing: 'border-box' };
 const label: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: '#3E5456' };
 const small: React.CSSProperties = { height: 32, padding: '0 12px', borderRadius: 999, fontSize: 12, cursor: 'pointer' };
 
 async function call(url: string, method: string, body?: unknown) {
-  const res = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
+  const res = await fetch(url, { signal: timeoutSignal(), method, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
   const data = await res?.json().catch(() => null);
   if (!res?.ok) throw new Error(data?.error?.message ?? 'تعذر الحفظ');
   return data;

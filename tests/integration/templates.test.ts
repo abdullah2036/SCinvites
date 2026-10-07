@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { sql } from '@/lib/server/db';
 import { createSession, OWNER_COOKIE } from '@/lib/server/sessions';
-import { createTemplate, updateTemplate, approveTemplate, templatesVisibleToLeaders, listGalleryTemplates } from '@/lib/server/templates';
+import { createTemplate, updateTemplate, approveTemplate, templatesVisibleToLeaders, listGalleryTemplates, listTemplates } from '@/lib/server/templates';
 import { createEvent } from '@/lib/server/events';
 import { uploadArtwork } from '@/lib/server/storage';
 import { POST as postTemplate } from '@/app/api/templates/route';
@@ -98,6 +98,25 @@ describe('templates', () => {
 
     await sql`update events set status = 'draft' where id = ${ev.id}`;
     expect(await templatesVisibleToLeaders()).toHaveLength(0); // a draft event hides its templates
+  });
+
+  it('tells the owner, per template, whether leaders see it and why not — the same rule as the leader page', async () => {
+    const day = 86400_000;
+    const now = Date.now();
+    const active = await makeEvent();
+    const draftEvent = await makeEvent({ status: 'draft' });
+    const archived = await makeEvent({ status: 'archived' });
+    const ok = await makeTemplate({ event_id: active.id });
+    const draft = await makeTemplate({ event_id: active.id, status: 'draft', approved_at: null });
+    const onDraftEvent = await makeTemplate({ event_id: draftEvent.id });
+    const onArchived = await makeTemplate({ event_id: archived.id });
+    const later = await makeTemplate({ event_id: active.id, available_from: new Date(now + day) });
+    const over = await makeTemplate({ event_id: active.id, available_to: new Date(now - day) });
+    const reasons = Object.fromEntries((await listTemplates()).map((t) => [t.id, t.hidden_reason]));
+    expect(reasons).toEqual({
+      [ok.id]: null, [draft.id]: 'not_approved', [onDraftEvent.id]: 'event_draft', [onArchived.id]: 'event_archived', [later.id]: 'not_yet', [over.id]: 'ended',
+    });
+    expect((await templatesVisibleToLeaders()).map((t) => t.id)).toEqual([ok.id]);
   });
 
   it('gallery lists approved templates only, filterable by track and stamp', async () => {

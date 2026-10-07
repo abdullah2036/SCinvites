@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import EventsView from '@/components/boards/EventsView';
 import { TRACK_INFO, paletteVars } from '@/components/invitation/palette';
 import { TRACKS, type PlaceType, type Track } from '@/lib/shared/types';
+import { timeoutSignal } from '@/lib/shared/timeout';
 
 export type EventCard = {
   id: string;
@@ -67,7 +68,7 @@ export default function EventsClient({ events, base }: { events: EventCard[]; ba
       place: { type: form.placeType, name: form.placeType === 'none' ? null : form.placeName || null, url: form.placeType === 'none' ? '' : form.placeUrl.trim() ? (/^https?:\/\//.test(form.placeUrl.trim()) ? form.placeUrl.trim() : `https://${form.placeUrl.trim()}`) : '' },
       status: form.status,
     };
-    const res = await fetch(form.id ? `/api/events/${form.id}` : '/api/events', { method: form.id ? 'PATCH' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
+    const res = await fetch(form.id ? `/api/events/${form.id}` : '/api/events', { signal: timeoutSignal(), method: form.id ? 'PATCH' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
     setBusy(false);
     if (!res?.ok) {
       const e = await res?.json().catch(() => null);

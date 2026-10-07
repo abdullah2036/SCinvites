@@ -15,7 +15,20 @@ export type GalleryCard = {
   artworkUrl: string | null;
   status: 'draft' | 'approved' | 'superseded';
   version: number;
+  /** Why leaders can't see it now (null: they can), plus the date it opens for 'not_yet'. */
+  hidden: { reason: 'not_approved' | 'event_draft' | 'event_archived' | 'not_yet' | 'ended' | null; from: string | null };
 };
+
+const dayAr = (iso: string) => new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'long' }).format(new Date(iso));
+const LEADERS: Record<NonNullable<GalleryCard['hidden']['reason']>, string> = {
+  not_approved: 'مسودة: لا يراها القادة حتى تعتمديها',
+  event_draft: 'لا يراه القادة: الفعالية مسودة',
+  event_archived: 'لا يراه القادة: الفعالية مؤرشفة',
+  not_yet: 'يظهر للقادة لاحقًا',
+  ended: 'لا يراه القادة: انتهت مدة ظهوره',
+};
+const leadersLine = (h: GalleryCard['hidden']) =>
+  !h.reason ? 'يراه القادة ✓' : h.reason === 'not_yet' && h.from ? `يظهر للقادة من ${dayAr(h.from)}` : LEADERS[h.reason];
 
 const DOT: Record<Track, string> = { club: '#13707B', space: '#0B3B41', chem: '#2F8C8A', phys: '#6FB7B8', bio: '#4F8F7E', math: '#C99A2E', sport: '#E0B95A' };
 
@@ -47,7 +60,7 @@ export default function TemplatesClient({ cards, base }: { cards: GalleryCard[];
       vars: paletteVars(c.allowedColors[0] ?? 'night'),
       subtitle: c.eventSubtitle ?? TRACK_INFO[c.track].name,
       title: c.eventTitle,
-      line: `${TRACK_INFO[c.track].name} · ${c.stampTypes.join(' · ')}${c.status === 'draft' ? ' · مسودة' : ''}`,
+      line: `${TRACK_INFO[c.track].name} · ${c.stampTypes.join(' · ')} · ${leadersLine(c.hidden)}`,
       colors: c.allowedColors.map((x) => PALETTE[x].label).join('، '),
     })),
     empty: shown.length ? null : (

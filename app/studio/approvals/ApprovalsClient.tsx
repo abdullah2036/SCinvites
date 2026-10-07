@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import DashboardDarkView from '@/components/boards/DashboardDarkView';
 import { PALETTE, TRACK_INFO } from '@/components/invitation/palette';
 import type { PendingRequest } from '@/lib/server/requests';
+import { timeoutSignal } from '@/lib/shared/timeout';
 
 type State = 'بانتظار' | 'معتمدة' | 'تعديل';
 const COL: Record<State, [string, string]> = {
@@ -50,7 +51,7 @@ export default function ApprovalsClient({ requests: initial }: { requests: Pendi
     setBusy(true);
     setError('');
     const body = decision === 'approve' ? { decision, excludedPersonIds: cur.people.filter((p) => off[p.id]).map((p) => p.id) } : { decision, note };
-    const res = await fetch(`/api/requests/${cur.id}/decide`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
+    const res = await fetch(`/api/requests/${cur.id}/decide`, { signal: timeoutSignal(), method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
     setBusy(false);
     if (!res?.ok) {
       const e = await res?.json().catch(() => null);

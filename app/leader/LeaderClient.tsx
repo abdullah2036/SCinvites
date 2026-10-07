@@ -9,6 +9,7 @@ import { PALETTE, TRACK_INFO } from '@/components/invitation/palette';
 import { taggedUrl } from '@/lib/shared/source';
 import type { LeaderRequestItem } from '@/lib/server/requests';
 import type { TemplateOption } from '@/components/create/CreateForm';
+import { timeoutSignal } from '@/lib/shared/timeout';
 
 const ar = (n: number) => n.toLocaleString('ar-SA');
 const day = (iso: string) => new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'long' }).format(new Date(iso));
@@ -30,7 +31,7 @@ export default function LeaderClient({ leader, templates, requests }: { leader: 
   async function openLinks(r: LeaderRequestItem) {
     setBusyId(r.id);
     setError('');
-    const res = await fetch(`/api/requests/${r.id}/links`).catch(() => null);
+    const res = await fetch(`/api/requests/${r.id}/links`, { signal: timeoutSignal() }).catch(() => null);
     setBusyId(null);
     if (!res?.ok) {
       setError('تعذر تحميل الروابط، حاول مرة أخرى');

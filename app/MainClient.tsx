@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import MainView from '@/components/boards/MainView';
+import { timeoutSignal } from '@/lib/shared/timeout';
 
 // The leader's email is remembered on this device so signing in later is one tap.
 const EMAIL_KEY = 'sc_leader_email';
 const CHECK_EVERY_MS = 30_000;
 
 async function postJson(url: string, body: unknown) {
-  const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
+  const res = await fetch(url, { signal: timeoutSignal(), method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
   const data = await res?.json().catch(() => null);
   if (!res?.ok) throw new Error(data?.error?.message ?? 'تعذر الاتصال، حاول مرة أخرى');
   return data;
@@ -30,7 +31,7 @@ export default function MainClient() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(EMAIL_KEY);
-      if (saved) setMail(saved); // eslint-disable-line react-hooks/set-state-in-effect
+      if (saved) setMail((cur) => cur || saved); // eslint-disable-line react-hooks/set-state-in-effect -- never overwrite what the user started typing
     } catch {
       /* storage unavailable: the field just starts empty */
     }

@@ -6,6 +6,7 @@ test.beforeEach(reset);
 
 test('clicking the club logo opens the hidden owner login; wrong then right password', async ({ page }) => {
   await page.goto('/');
+  await page.waitForLoadState('networkidle');
   await page.getByRole('button', { name: 'نادي العلوم' }).first().click();
   const pass = page.getByLabel('كلمة السر');
   await pass.fill('wrong-password');
@@ -23,6 +24,7 @@ test('the studio is hidden at /studio and behind the secret path without a sessi
 
 test('leaders request access with a name and an s4 university email (no committee)', async ({ page }) => {
   await page.goto('/');
+  await page.waitForLoadState('networkidle');
   await expect(page.getByLabel('لجنتك')).toHaveCount(0);
   await page.getByLabel('اسمك').fill('خالد الحربي');
   await page.getByLabel('بريدك الجامعي').fill('khalid@uqu.edu.sa');
@@ -39,6 +41,7 @@ test('leaders request access with a name and an s4 university email (no committe
 
 test('the owner path never ships in client JavaScript', async ({ page }) => {
   await page.goto('/');
+  await page.waitForLoadState('networkidle');
   const scripts = await page.locator('script[src]').evaluateAll((els) => els.map((e) => (e as HTMLScriptElement).src));
   for (const src of scripts) {
     const body = await (await page.request.get(src)).text();
@@ -48,6 +51,7 @@ test('the owner path never ships in client JavaScript', async ({ page }) => {
 
 test('the login page switches to a bottom layout on phones without horizontal scroll', async ({ page }) => {
   await page.goto('/');
+  await page.waitForLoadState('networkidle');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
@@ -55,6 +59,7 @@ test('the login page switches to a bottom layout on phones without horizontal sc
 
 test('after asking, the waiting screen lets the leader in once approved, and the email is remembered', async ({ page }) => {
   await page.goto('/');
+  await page.waitForLoadState('networkidle');
   await page.getByLabel('اسمك').fill('ريم');
   await page.getByLabel('بريدك الجامعي').fill('s443000666@uqu.edu.sa');
   await page.getByRole('button', { name: 'دخول', exact: true }).click();
@@ -67,6 +72,7 @@ test('after asking, the waiting screen lets the leader in once approved, and the
 
   await page.context().clearCookies();
   await page.goto('/');
+  await page.waitForLoadState('networkidle');
   await expect(page.getByLabel('بريدك الجامعي')).toHaveValue('s443000666@uqu.edu.sa');
   await page.getByRole('button', { name: 'دخول', exact: true }).click();
   await expect(page).toHaveURL(/\/leader$/);

@@ -13,6 +13,7 @@ test('full leader flow: access request → approval → email sign-in → names 
 
   // 1. leader asks for access
   await page.goto('/');
+  await page.waitForLoadState('networkidle');
   await page.getByLabel('اسمك').fill('م. خالد الحربي');
   await page.getByLabel('بريدك الجامعي').fill('s443012345@uqu.edu.sa');
   await page.getByRole('button', { name: 'دخول', exact: true }).click();
@@ -28,6 +29,7 @@ test('full leader flow: access request → approval → email sign-in → names 
 
   // 3. the leader signs in with the email alone
   await page.goto('/');
+  await page.waitForLoadState('networkidle');
   await page.getByLabel('بريدك الجامعي').fill('s443012345@uqu.edu.sa');
   await page.getByRole('button', { name: 'دخول', exact: true }).click();
   await expect(page).toHaveURL(/\/leader$/);
@@ -80,6 +82,7 @@ test('a leader with no templates yet sees why, and the menu does not throw the p
   await reset();
   await db`insert into leaders (name, email, status, approved_at) values ('م. سعد', 's443000333@uqu.edu.sa', 'approved', now())`;
   await page.goto('/');
+  await page.waitForLoadState('networkidle');
   await page.getByLabel('بريدك الجامعي').fill('s443000333@uqu.edu.sa');
   await page.getByRole('button', { name: 'دخول', exact: true }).click();
   await expect(page).toHaveURL(/\/leader$/);

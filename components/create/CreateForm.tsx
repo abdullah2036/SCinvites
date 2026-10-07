@@ -7,6 +7,7 @@ import { PALETTE, TRACK_INFO, paletteVars } from '@/components/invitation/palett
 import { parseNames } from '@/lib/shared/names';
 import { taggedUrl } from '@/lib/shared/source';
 import { TRACKS, COLORS, STAMPS, type Color, type GuestView, type PlaceType, type Track } from '@/lib/shared/types';
+import { timeoutSignal } from '@/lib/shared/timeout';
 
 export type TemplateOption = {
   id: string;
@@ -37,7 +38,7 @@ function onlineName(url: string) {
 const normalizeUrl = (u: string) => (!u.trim() ? '' : /^https?:\/\//i.test(u.trim()) ? u.trim() : `https://${u.trim()}`);
 
 async function postJson(url: string, body: unknown) {
-  const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
+  const res = await fetch(url, { signal: timeoutSignal(), method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
   const data = await res?.json().catch(() => null);
   if (!res?.ok) throw new Error(data?.error?.message ?? 'تعذر الاتصال، حاول مرة أخرى');
   return data;
@@ -132,7 +133,7 @@ export default function CreateForm({
       if (leader) {
         const payload = { templateId: tpl!.id, color, stamp, place, showQr: qr, people: multi ? people : [{ name: name.trim(), org: org.trim() || null, title: title.trim() || null }] };
         if (edit) {
-          const res = await fetch(`/api/requests/${edit.requestId}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => null);
+          const res = await fetch(`/api/requests/${edit.requestId}`, { signal: timeoutSignal(), method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => null);
           const data = await res?.json().catch(() => null);
           if (!res?.ok) throw new Error(data?.error?.message ?? 'تعذر الإرسال');
           setLeaderDoneCount(payload.people.length);

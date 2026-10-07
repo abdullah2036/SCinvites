@@ -4,13 +4,16 @@ import { useEffect, useState } from 'react';
 import Invitation from '@/components/invitation/Invitation';
 import { saveInvitationImage, SaveOverlay } from '@/components/invitation/SaveImage';
 import type { GuestView } from '@/lib/shared/types';
+import { timeoutSignal } from '@/lib/shared/timeout';
 
 async function post(url: string, body: unknown) {
   const res = await fetch(url, {
+    signal: timeoutSignal(),
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-guest-referrer': document.referrer.slice(0, 300) },
     body: JSON.stringify(body),
-  });
+  }).catch(() => null);
+  if (!res) throw new Error('تعذر الاتصال، حاول مرة أخرى');
   if (!res.ok) {
     const err = await res.json().catch(() => null);
     throw new Error(err?.error?.message ?? 'تعذر الاتصال، حاول مرة أخرى');

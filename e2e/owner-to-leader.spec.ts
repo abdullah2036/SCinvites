@@ -20,6 +20,8 @@ test('a template the owner publishes reaches an approved leader (UI only, no dat
 
   // owner: template for that event, approved and published
   await page.getByRole('link', { name: 'قالب' }).first().click();
+  await page.waitForURL(/\/templates\/new/);
+  await page.waitForLoadState('networkidle'); // full page load: wait until the editor is interactive
   await expect(page.getByText('بعد الاعتماد يظهر مباشرة لكل القادة المعتمدين')).toBeVisible();
   await page.getByRole('button', { name: 'اعتماد ونشر' }).click();
   await expect(page.getByText('اعتُمد · شوفيه في معرض القوالب')).toBeVisible();
@@ -28,6 +30,7 @@ test('a template the owner publishes reaches an approved leader (UI only, no dat
   const leaderCtx = await browser.newContext({ baseURL: E2E.baseURL });
   const leader = await leaderCtx.newPage();
   await leader.goto('/');
+  await leader.waitForLoadState('networkidle');
   await leader.getByLabel('اسمك').fill('سعد القرشي');
   await leader.getByLabel('بريدك الجامعي').fill('s443055555@uqu.edu.sa');
   await leader.getByRole('button', { name: 'دخول', exact: true }).click();
@@ -40,6 +43,7 @@ test('a template the owner publishes reaches an approved leader (UI only, no dat
 
   // leader: signs in with the email and sees the template
   await leader.goto('/');
+  await leader.waitForLoadState('networkidle');
   await leader.getByLabel('بريدك الجامعي').fill('s443055555@uqu.edu.sa');
   await leader.getByRole('button', { name: 'دخول', exact: true }).click();
   await expect(leader).toHaveURL(/\/leader$/);

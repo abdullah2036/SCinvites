@@ -20,6 +20,8 @@ export default function CalmMotion() {
       for (const a of document.getAnimations()) {
         if (a.playState !== 'running') continue;
         const t = a.effect?.getComputedTiming();
+        const target = (a.effect as KeyframeEffect | null)?.target as Element | null;
+        if (target?.closest('[data-keep-motion]')) continue; // progress indicators keep moving
         if (t?.iterations === Infinity && Number(a.currentTime ?? 0) >= limit) a.pause();
       }
     };
