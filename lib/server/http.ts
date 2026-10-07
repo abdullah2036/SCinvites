@@ -24,11 +24,16 @@ type Ctx = { params: Promise<Record<string, string>> };
 /** Wraps a route handler: same-origin check on non-GET, errors mapped to JSON. */
 export function handler<C extends Ctx = Ctx>(fn: (req: Request, ctx: C) => Promise<Response>) {
   return async (req: Request, ctx: C): Promise<Response> => {
+    const started = Date.now();
     try {
       if (req.method !== 'GET' && req.method !== 'HEAD') assertSameOrigin(req);
       return await fn(req, ctx);
     } catch (e) {
       return errorResponse(e);
+    } finally {
+      // Shows up in Vercel → Logs: which requests are slow when the site feels stuck.
+      const ms = Date.now() - started;
+      if (ms > 3000) console.warn(`[slow] ${req.method} ${new URL(req.url).pathname} ${ms} ms`);
     }
   };
 }
