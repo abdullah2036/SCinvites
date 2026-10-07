@@ -7,5 +7,6 @@ describe('/api/status/db', () => {
     expect(body.appPool).toMatch(/^ok \d+ ms$/);
     expect(body.freshConnection).toMatch(/^ok \d+ ms$/);
     expect(Array.isArray(body.sessions)).toBe(true);
+    expect(body.oneRoundTrip).toMatch(/^yes \(PDBES\)$/);
   });
 });

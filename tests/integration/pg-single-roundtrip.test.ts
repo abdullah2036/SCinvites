@@ -23,7 +23,7 @@ describe('postgres.js patch: one round trip for plain values', () => {
           s.once('connect', () => resolve(s));
           s.once('error', reject);
         }),
-    });
+    } as never);
     try {
       await sql`select 1`; // connection setup
       writes.length = 0;

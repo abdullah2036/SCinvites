@@ -1,3 +1,4 @@
+import net from 'node:net';
 import postgres from 'postgres';
 import { sql } from '@/lib/server/db';
 
@@ -22,7 +23,25 @@ export async function GET() {
     out.appPool = `${(e as Error).message === 'timeout' ? 'STUCK (no answer in 8 s)' : 'error'} after ${Math.round(performance.now() - t0)} ms`;
   }
 
-  const probe = postgres(process.env.DATABASE_URL ?? '', { prepare: false, max: 1, connect_timeout: 5, idle_timeout: 1, onnotice: () => {} });
+  // Records what the client sends, to confirm patches/postgres+3.4.9.patch is live: a query with a plain value must go
+  // in one exchange (no Flush/'H' message mid-query).
+  const sent: string[] = [];
+  const url = new URL(process.env.DATABASE_URL ?? 'postgres://localhost');
+  const probe = postgres(process.env.DATABASE_URL ?? '', {
+    prepare: false, max: 1, connect_timeout: 5, idle_timeout: 1, onnotice: () => {},
+    socket: () =>
+      new Promise<net.Socket>((resolve, reject) => {
+        const s = net.connect(Number(url.port || 5432), url.hostname);
+        const write = s.write.bind(s) as (...a: unknown[]) => boolean;
+        s.write = ((chunk: unknown, ...rest: unknown[]) => {
+          const b = Buffer.from(chunk as Buffer);
+          for (let i = 0; i + 5 <= b.length; i += 1 + b.readInt32BE(i + 1)) sent.push(String.fromCharCode(b[i]));
+          return write(chunk, ...rest);
+        }) as typeof s.write;
+        s.once('connect', () => resolve(s));
+        s.once('error', reject);
+      }),
+  } as never);
   const t1 = performance.now();
   try {
     const rows = await within(
@@ -36,6 +55,9 @@ export async function GET() {
       8000,
     );
     out.freshConnection = `ok ${Math.round(performance.now() - t1)} ms`;
+    sent.length = 0;
+    await within(probe`select ${'probe'}::text as x`, 5000);
+    out.oneRoundTrip = sent.includes('H') ? `NO (${sent.join('')}) — postgres.js patch not applied` : `yes (${sent.join('')})`;
     out.sessions = rows.map((r) => `${r.who ?? '?'} ${r.state ?? '?'}${r.wait ? ` wait=${r.wait}` : ''}${r.xact_s != null ? ` tx=${r.xact_s}s` : ''}${r.query_s != null ? ` q=${r.query_s}s` : ''}${r.blocked_by ? ` BLOCKED by ${r.blocked_by}` : ''} | ${r.query ?? ''}`);
   } catch (e) {
     out.freshConnection = `${(e as Error).message === 'timeout' ? 'STUCK (no answer in 8 s)' : `error: ${(e as Error).message.slice(0, 80)}`} after ${Math.round(performance.now() - t1)} ms`;
