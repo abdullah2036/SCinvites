@@ -504,7 +504,7 @@ Au
         {v.stepMail ? (
           <>
           <label htmlFor="nm" style={S({ fontSize: "13px", color: "#2C4245" })}>
-اسمك
+اسمك (أول مرة فقط)
           </label>
           <input id="nm" className="field" value={v.name} onChange={v.onName} autoComplete="name" placeholder="الاسم كما يظهر للنادي" style={S({ height: "54px", border: "1px solid rgba(255,255,255,.95)", borderRadius: "999px", padding: "0 22px", fontFamily: "TS, sans-serif", fontSize: "16px", background: "rgba(255,255,255,.78)", color: "#18292C" })} />
           <label htmlFor="em" style={S({ fontSize: "13px", color: "#2C4245" })}>
@@ -515,7 +515,7 @@ Au
 {v.msg}
           </span>
           <button type="button" onClick={v.ask} disabled={v.busy} style={S({ height: "54px", border: "0", borderRadius: "999px", background: "linear-gradient(160deg,#13707B,#0B3B41)", color: "#FFFFFF", fontFamily: "TS, sans-serif", fontWeight: "700", fontSize: "16px", cursor: "pointer", opacity: v.goOp })}>
-طلب الدخول
+{v.goLabel}
           </button>
           </>
         ) : null}
@@ -529,7 +529,7 @@ Au
             <span style={S({ fontSize: "14px", color: "#3E5456", lineHeight: "1.7" })}>
 {v.waitText}
             </span>
-            
+            {v.waitActions}
           </div>
           </>
         ) : null}

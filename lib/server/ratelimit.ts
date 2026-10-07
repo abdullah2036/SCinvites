@@ -9,7 +9,8 @@ import { AppError } from '@/lib/shared/types';
 export const LIMITS = {
   guestOpenPerIpPerMinute: 600,
   guestRsvpPerPersonPerMinute: 20,
-  leaderCheckPerIpPerHour: 600,
+  // the waiting screen checks every 30 s, and many leaders can be waiting behind one campus IP
+  leaderCheckPerIpPerHour: 3000,
   leaderSignInPerEmailPerHour: 30,
   leaderNewPerIpPerHour: 100,
   leaderNewPerEmailPerDay: 3,

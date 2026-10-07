@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import MainView from '@/components/boards/MainView';
 
+// The leader's email is remembered on this device so signing in later is one tap.
+const EMAIL_KEY = 'sc_leader_email';
+const CHECK_EVERY_MS = 30_000;
 
 async function postJson(url: string, body: unknown) {
   const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
@@ -22,6 +25,16 @@ export default function MainClient() {
   const [pass, setPass] = useState('');
   const [passBusy, setPassBusy] = useState(false);
   const [passError, setPassError] = useState('');
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(EMAIL_KEY);
+      if (saved) setMail(saved); // eslint-disable-line react-hooks/set-state-in-effect
+    } catch {
+      /* storage unavailable: the field just starts empty */
+    }
+  }, []);
 
   const m = mail.trim();
   // The university format; the server also accepts leaders already approved and the review addresses.
@@ -36,6 +49,11 @@ export default function MainClient() {
     setServerMsg('');
     try {
       const r = await postJson('/api/leaders/request', { name, email: m });
+      try {
+        localStorage.setItem(EMAIL_KEY, m);
+      } catch {
+        /* not remembered on this device */
+      }
       if (r.redirect) {
         location.assign(r.redirect);
         return;
@@ -48,6 +66,26 @@ export default function MainClient() {
       setBusy(false);
     }
   }
+
+  // While waiting for approval: check now and then (and on demand); once approved the server signs the leader in.
+  const check = useCallback(async () => {
+    setChecking(true);
+    try {
+      const r = await postJson('/api/leaders/request', { email: m });
+      if (r.redirect) location.assign(r.redirect);
+      else setStatus(r.status);
+    } catch {
+      /* try again on the next check */
+    } finally {
+      setChecking(false);
+    }
+  }, [m]);
+
+  useEffect(() => {
+    if (step !== 'wait' || status !== 'pending') return;
+    const timer = setInterval(() => document.visibilityState === 'visible' && check(), CHECK_EVERY_MS);
+    return () => clearInterval(timer);
+  }, [step, status, check]);
 
   async function login() {
     if (pass.length < 4 || passBusy) return;
@@ -74,19 +112,30 @@ export default function MainClient() {
     msgColor: serverMsg ? '#B5533F' : uni ? '#13707B' : m && !ok ? '#B5533F' : '#4F6567',
     msg:
       serverMsg ||
-      (!m ? 'نوافق على بريدك مرة وحدة، وبعدها تدخل بدون كلمة سر' : uni ? 'بريد جامعي صحيح' : ok ? 'البريد الجامعي يبدأ بـ s4 ثم رقمك الجامعي' : 'اكتب بريدك الجامعي كاملًا'),
+      (!m ? 'أول مرة؟ اكتب اسمك وبريدك. بعد موافقة صاحبة المنصة تدخل من هنا ببريدك فقط' : uni ? 'بريد جامعي صحيح' : ok ? 'البريد الجامعي يبدأ بـ s4 ثم رقمك الجامعي' : 'اكتب بريدك الجامعي كاملًا'),
     goOp: ready ? 1 : 0.55,
     busy,
     ask,
     stepMail: step === 'mail',
     stepWait: step === 'wait',
-    waitTitle: status === 'approved' ? 'بريدك معتمد' : status === 'revoked' ? 'تم إيقاف هذا الحساب' : 'وصل طلبك',
+    goLabel: 'دخول',
+    waitTitle: status === 'revoked' ? 'تم إيقاف هذا الحساب' : 'وصل طلبك',
     waitText:
-      status === 'approved'
-        ? 'اطلب رابط الدخول من صاحبة المنصة، يصلك على الواتساب ويفتح البوابة على جوالك'
-        : status === 'revoked'
-          ? 'تواصل مع صاحبة المنصة إذا كان هذا خطأ'
-          : 'أول ما تعتمد صاحبة المنصة بريدك، ادخل من هنا ببريدك الجامعي فقط بدون كلمة سر',
+      status === 'revoked'
+        ? 'تواصل مع صاحبة المنصة إذا كان هذا خطأ'
+        : 'بانتظار موافقة صاحبة المنصة. اترك الصفحة مفتوحة وتدخل تلقائيًا أول ما توافق، أو ارجع لاحقًا لهذه الصفحة واضغط «دخول» ببريدك نفسه',
+    waitActions: (
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        {status === 'pending' && (
+          <button type="button" onClick={() => void check()} disabled={checking} style={{ height: 44, padding: '0 20px', borderRadius: 999, border: 0, background: 'linear-gradient(160deg,#13707B,#0B3B41)', color: '#fff', fontWeight: 700, cursor: 'pointer', opacity: checking ? 0.6 : 1 }}>
+            {checking ? 'نتحقق…' : 'تحقق الآن'}
+          </button>
+        )}
+        <button type="button" onClick={() => setStep('mail')} style={{ height: 44, padding: '0 20px', borderRadius: 999, border: '1px solid rgba(19,112,123,.3)', background: 'transparent', color: '#0B3B41', cursor: 'pointer' }}>
+          رجوع
+        </button>
+      </div>
+    ),
     gate,
     openGate: () => setGate(true),
     closeGate: () => {

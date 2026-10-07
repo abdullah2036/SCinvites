@@ -15,7 +15,7 @@ test('full leader flow: access request → approval → email sign-in → names 
   await page.goto('/');
   await page.getByLabel('اسمك').fill('م. خالد الحربي');
   await page.getByLabel('بريدك الجامعي').fill('s443012345@uqu.edu.sa');
-  await page.getByRole('button', { name: 'طلب الدخول' }).click();
+  await page.getByRole('button', { name: 'دخول', exact: true }).click();
   await expect(page.getByText('وصل طلبك')).toBeVisible();
 
   // 2. owner approves (API) — no link to send
@@ -29,7 +29,7 @@ test('full leader flow: access request → approval → email sign-in → names 
   // 3. the leader signs in with the email alone
   await page.goto('/');
   await page.getByLabel('بريدك الجامعي').fill('s443012345@uqu.edu.sa');
-  await page.getByRole('button', { name: 'طلب الدخول' }).click();
+  await page.getByRole('button', { name: 'دخول', exact: true }).click();
   await expect(page).toHaveURL(/\/leader$/);
   await expect(page.getByText('ثورة الصواريخ').first()).toBeVisible();
   await expect(page.getByText('فعالية ثانية').first()).toBeVisible();
@@ -81,7 +81,7 @@ test('a leader with no templates yet sees why, and the menu does not throw the p
   await db`insert into leaders (name, email, status, approved_at) values ('م. سعد', 's443000333@uqu.edu.sa', 'approved', now())`;
   await page.goto('/');
   await page.getByLabel('بريدك الجامعي').fill('s443000333@uqu.edu.sa');
-  await page.getByRole('button', { name: 'طلب الدخول' }).click();
+  await page.getByRole('button', { name: 'دخول', exact: true }).click();
   await expect(page).toHaveURL(/\/leader$/);
   await expect(page.getByText(/لا توجد قوالب معتمدة بعد/)).toBeVisible();
   await page.waitForLoadState('networkidle'); // menu handling starts once the page is interactive

@@ -30,7 +30,7 @@ test('a template the owner publishes reaches an approved leader (UI only, no dat
   await leader.goto('/');
   await leader.getByLabel('اسمك').fill('سعد القرشي');
   await leader.getByLabel('بريدك الجامعي').fill('s443055555@uqu.edu.sa');
-  await leader.getByRole('button', { name: 'طلب الدخول' }).click();
+  await leader.getByRole('button', { name: 'دخول', exact: true }).click();
   await expect(leader.getByText('وصل طلبك')).toBeVisible();
 
   // owner: approves in Settings
@@ -41,7 +41,7 @@ test('a template the owner publishes reaches an approved leader (UI only, no dat
   // leader: signs in with the email and sees the template
   await leader.goto('/');
   await leader.getByLabel('بريدك الجامعي').fill('s443055555@uqu.edu.sa');
-  await leader.getByRole('button', { name: 'طلب الدخول' }).click();
+  await leader.getByRole('button', { name: 'دخول', exact: true }).click();
   await expect(leader).toHaveURL(/\/leader$/);
   await expect(leader.getByText('اختبار القوالب').first()).toBeVisible();
   await expect(leader.getByText(/لا توجد قوالب معتمدة بعد/)).toHaveCount(0);
