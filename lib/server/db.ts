@@ -7,6 +7,8 @@ export type Db = Sql | Tx;
 
 /** Idle connections close after this long. */
 const IDLE_SECONDS = 5;
+/** Stay awake this long after the last query starts: covers queries that wait their turn in the pool, then idle close. */
+const HOLD_SECONDS = 20;
 
 let instance: Sql | null = null;
 
@@ -37,7 +39,7 @@ function holdUntilIdle() {
   if (releaseTimer) clearTimeout(releaseTimer);
   release?.();
   const done = new Promise<void>((resolve) => (release = resolve));
-  releaseTimer = setTimeout(() => release?.(), (IDLE_SECONDS + 1) * 1000);
+  releaseTimer = setTimeout(() => release?.(), HOLD_SECONDS * 1000);
   try {
     waitUntil(done);
   } catch {

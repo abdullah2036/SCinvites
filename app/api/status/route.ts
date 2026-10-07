@@ -6,7 +6,7 @@ import { leaderTemplateCounts } from '@/lib/server/templates';
 export const dynamic = 'force-dynamic';
 
 // Number of files in supabase/migrations — bump when adding one.
-const MIGRATIONS = 5;
+const MIGRATIONS = 6;
 
 /**
  * Plain-language health report for the developer: each part says "ok" or what is wrong.
@@ -54,6 +54,17 @@ export async function GET(req: Request) {
       checks.templates = `${total} current, ${c.visible ?? 0} visible to leaders${hidden.length ? ` (hidden: ${hidden.join(', ')})` : ''}`;
     } catch {
       checks.templates = 'unknown';
+    }
+  }
+  if (checks.database.startsWith('ok')) {
+    // The database job that frees connections left stuck mid-query (migration 20261008000000).
+    try {
+      const [r] = await sql<{ active: boolean | null }[]>`
+        select (select active from cron.job where jobname = 'reap-stuck-connections') as active
+        where exists (select 1 from pg_namespace where nspname = 'cron')`;
+      checks.reaper = r?.active ? 'ok' : r ? 'installed but paused' : 'not installed — run the "Migrate production database" action';
+    } catch {
+      checks.reaper = 'not installed — run the "Migrate production database" action';
     }
   }
   checks.server = `${process.env.VERCEL_REGION ?? 'local'}, up ${Math.round(process.uptime())} s`;
