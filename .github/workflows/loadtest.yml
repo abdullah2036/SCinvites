@@ -1,0 +1,84 @@
+name: Load test production
+# Launch-day rehearsal against the live site, from 4 GitHub machines (4 different internet addresses, so Vercel's
+# attack protection doesn't mistake it for one attacker). Creates its own test event, template, public link and
+# leaders, simulates students + leaders + the owner, then deletes everything it created. Run it when nobody else
+# is using the site. Results: the summary on the run page.
+on:
+  workflow_dispatch:
+    inputs:
+      students:
+        description: Students opening the public link, registering and answering (total)
+        default: '400'
+      leaders:
+        description: Leaders signing in, sending 15 names each, auto-refreshing (total)
+        default: '40'
+      minutes:
+        description: Test length in minutes
+        default: '3'
+      spread:
+        description: Seconds over which everyone arrives (60 = a link posted in a big group)
+        default: '60'
+
+concurrency:
+  group: loadtest
+  cancel-in-progress: false
+
+env:
+  BASE: https://your-site.example
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      fixtures: ${{ steps.fixtures.outputs.json }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - id: fixtures
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DIRECT }}
+        run: echo "json=$(npx tsx scripts/loadtest.mts --setup-only --allow-remote-db --leaders ${{ inputs.leaders }} | tail -1)" >> "$GITHUB_OUTPUT"
+
+  load:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Simulate users (shard ${{ matrix.shard }} of 4; the owner runs on shard 0)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DIRECT }}
+          FIXTURES: ${{ needs.setup.outputs.fixtures }}
+        run: >
+          npx tsx scripts/loadtest.mts --allow-remote-db --base "$BASE" --fixtures "$FIXTURES"
+          --shard ${{ matrix.shard }} --shards 4 ${{ matrix.shard == 0 && '--owner' || '' }}
+          --students ${{ inputs.students }} --minutes ${{ inputs.minutes }} --spread ${{ inputs.spread }}
+
+  cleanup:
+    needs: [setup, load]
+    if: always() && needs.setup.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Delete everything the test created
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DIRECT }}
+          FIXTURES: ${{ needs.setup.outputs.fixtures }}
+        run: npx tsx scripts/loadtest.mts --allow-remote-db --cleanup --fixtures "$FIXTURES"
