@@ -1,0 +1,48 @@
+diff --git a/node_modules/postgres/cf/src/connection.js b/node_modules/postgres/cf/src/connection.js
+index 8e79170..baddc6a 100644
+--- a/node_modules/postgres/cf/src/connection.js
++++ b/node_modules/postgres/cf/src/connection.js
+@@ -237,7 +237,10 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+     q.onlyDescribe && (delete statements[q.signature])
+     q.parameters = q.parameters || parameters
+     q.prepared = q.prepare && q.signature in statements
+-    q.describeFirst = q.onlyDescribe || (parameters.length && !q.prepared)
++    // scinvites patch (patches/postgres+3.4.9.patch): without prepared statements, only describe first when a value
++    // needs its server type to be serialized (lists, plain objects). Plain values go in one round trip, so a pooled
++    // connection is never left waiting on the client mid-query (Supabase transaction pooler + paused functions).
++    q.describeFirst = q.onlyDescribe || (parameters.length && !q.prepared && (q.prepare || parameters.some((x, i) => !types[i] && x !== null && typeof x === 'object')))
+     q.statement = q.prepared
+       ? statements[q.signature]
+       : { string, types, name: q.prepare ? statementId + statementCount++ : '' }
+diff --git a/node_modules/postgres/cjs/src/connection.js b/node_modules/postgres/cjs/src/connection.js
+index 07f6716..5252616 100644
+--- a/node_modules/postgres/cjs/src/connection.js
++++ b/node_modules/postgres/cjs/src/connection.js
+@@ -235,7 +235,10 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+     q.onlyDescribe && (delete statements[q.signature])
+     q.parameters = q.parameters || parameters
+     q.prepared = q.prepare && q.signature in statements
+-    q.describeFirst = q.onlyDescribe || (parameters.length && !q.prepared)
++    // scinvites patch (patches/postgres+3.4.9.patch): without prepared statements, only describe first when a value
++    // needs its server type to be serialized (lists, plain objects). Plain values go in one round trip, so a pooled
++    // connection is never left waiting on the client mid-query (Supabase transaction pooler + paused functions).
++    q.describeFirst = q.onlyDescribe || (parameters.length && !q.prepared && (q.prepare || parameters.some((x, i) => !types[i] && x !== null && typeof x === 'object')))
+     q.statement = q.prepared
+       ? statements[q.signature]
+       : { string, types, name: q.prepare ? statementId + statementCount++ : '' }
+diff --git a/node_modules/postgres/src/connection.js b/node_modules/postgres/src/connection.js
+index 1b1cccd..7d8381a 100644
+--- a/node_modules/postgres/src/connection.js
++++ b/node_modules/postgres/src/connection.js
+@@ -235,7 +235,10 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+     q.onlyDescribe && (delete statements[q.signature])
+     q.parameters = q.parameters || parameters
+     q.prepared = q.prepare && q.signature in statements
+-    q.describeFirst = q.onlyDescribe || (parameters.length && !q.prepared)
++    // scinvites patch (patches/postgres+3.4.9.patch): without prepared statements, only describe first when a value
++    // needs its server type to be serialized (lists, plain objects). Plain values go in one round trip, so a pooled
++    // connection is never left waiting on the client mid-query (Supabase transaction pooler + paused functions).
++    q.describeFirst = q.onlyDescribe || (parameters.length && !q.prepared && (q.prepare || parameters.some((x, i) => !types[i] && x !== null && typeof x === 'object')))
+     q.statement = q.prepared
+       ? statements[q.signature]
+       : { string, types, name: q.prepare ? statementId + statementCount++ : '' }
