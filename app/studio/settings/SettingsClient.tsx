@@ -23,10 +23,14 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
   const [form, setForm] = useState({ owner_name: initial.owner_name, owner_title: initial.owner_title, owner_email: initial.owner_email ?? '' });
   const [extra, setExtra] = useState({ retention_days: initial.retention_days, email_sender_name: initial.email_sender_name, email_sender_address: initial.email_sender_address ?? '' });
   const [leaders, setLeaders] = useState(initialLeaders);
+  // New access requests arrive via auto-refresh: take the server's list whenever it changes.
+  const [seen, setSeen] = useState(initialLeaders);
+  if (seen !== initialLeaders) {
+    setSeen(initialLeaders);
+    setLeaders(initialLeaders);
+  }
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
-  const [link, setLink] = useState<{ name: string; url: string } | null>(null);
-  const [copied, setCopied] = useState(false);
 
   async function save(patch: Partial<Settings>, okText = 'حُفظت الإعدادات') {
     setBusy('settings');
@@ -42,16 +46,15 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
     }
   }
 
-  async function leaderAction(l: LeaderListItem, action: 'approve' | 'link' | 'revoke') {
+  async function leaderAction(l: LeaderListItem, action: 'approve' | 'revoke') {
     setBusy(l.id);
     setMsg(null);
     try {
-      const r = await call(`/api/leaders/${l.id}/${action}`, 'POST');
+      await call(`/api/leaders/${l.id}/${action}`, 'POST');
       if (action === 'revoke') setLeaders((all) => all.map((x) => (x.id === l.id ? { ...x, status: 'revoked' } : x)));
       else {
         setLeaders((all) => all.map((x) => (x.id === l.id ? { ...x, status: 'approved' } : x)));
-        setLink({ name: l.name, url: r.loginUrl });
-        setCopied(false);
+        setMsg({ text: `اعتُمد ${l.name}، يدخل الآن من الصفحة الرئيسية ببريده الجامعي` });
       }
     } catch (e) {
       setMsg({ text: (e as Error).message, error: true });
@@ -152,9 +155,6 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
           <button type="button" disabled={busy === l.id} onClick={() => changeCommittee(l)} style={{ ...small, border: '1px solid rgba(19,112,123,.3)', background: 'transparent', color: '#0B3B41' }}>
             اللجنة
           </button>
-          <button type="button" disabled={busy === l.id} onClick={() => leaderAction(l, 'link')} style={{ ...small, border: 0, background: 'rgba(19,112,123,.12)', color: '#13707B', fontWeight: 700 }}>
-            رابط دخول جديد
-          </button>
           <button type="button" disabled={busy === l.id} onClick={() => confirm(`إيقاف ${l.name}؟ سيُسجّل خروجه فورًا`) && leaderAction(l, 'revoke')} style={{ ...small, border: '1px solid rgba(155,59,46,.35)', background: 'transparent', color: '#9B3B2E' }}>
             إيقاف
           </button>
@@ -166,40 +166,6 @@ export default function SettingsClient({ settings: initial, leaders: initialLead
         {msg && (
           <div role={msg.error ? 'alert' : 'status'} className="glass" style={{ position: 'fixed', insetInline: 16, bottom: 90, zIndex: 30, maxWidth: 420, margin: '0 auto', borderRadius: 18, padding: '12px 16px', textAlign: 'center', color: msg.error ? '#9B3B2E' : '#0B3B41' }}>
             {msg.text}
-          </div>
-        )}
-        {link && (
-          <div role="dialog" aria-modal="true" aria-label="رابط دخول القائد" style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(7,37,41,.35)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', display: 'grid', placeItems: 'center', padding: 16 }}>
-            <div className="glass inA" style={{ width: 'min(460px, 100%)', borderRadius: 28, padding: 24, display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'center' }}>
-              <b style={{ fontSize: 18, color: '#0B3B41' }}>رابط دخول {link.name}</b>
-              <p style={{ margin: 0, fontSize: 13, color: '#4F6567' }}>صالح لمرة واحدة خلال ٢٤ ساعة، ويفتح بوابة القادة على جواله. لن يظهر الرابط مرة أخرى</p>
-              <code dir="ltr" style={{ padding: '10px 12px', borderRadius: 14, background: 'rgba(255,255,255,.8)', fontSize: 12, wordBreak: 'break-all' }}>
-                {link.url}
-              </code>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`رابط دخولك لمنصة دعوات نادي العلوم: ${link.url}`)}`}
-                  target="_blank"
-                  rel="noopener"
-                  style={{ flex: 1, height: 46, borderRadius: 999, background: '#0B3B41', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontWeight: 700 }}
-                >
-                  إرسال بالواتساب
-                </a>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await navigator.clipboard?.writeText(link.url).catch(() => {});
-                    setCopied(true);
-                  }}
-                  style={{ flex: 1, height: 46, borderRadius: 999, border: '1px solid #0B3B41', background: 'transparent', color: '#0B3B41', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  {copied ? 'نُسخ' : 'نسخ'}
-                </button>
-              </div>
-              <button type="button" onClick={() => setLink(null)} style={{ border: 0, background: 'transparent', color: '#4F6567', cursor: 'pointer' }}>
-                إغلاق
-              </button>
-            </div>
           </div>
         )}
       </>

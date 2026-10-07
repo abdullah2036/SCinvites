@@ -1,16 +1,12 @@
 import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import bcrypt from 'bcryptjs';
 import { sql } from '@/lib/server/db';
-import { sha256 } from '@/lib/server/crypto';
 import { getSession, createSession, LEADER_COOKIE, OWNER_COOKIE } from '@/lib/server/sessions';
 import { normalizeLeaderEmail } from '@/lib/server/leader-auth';
 import { outbox } from '@/lib/server/email';
 import { POST as requestAccess } from '@/app/api/leaders/request/route';
 import { POST as approve } from '@/app/api/leaders/[id]/approve/route';
-import { POST as reissue } from '@/app/api/leaders/[id]/link/route';
 import { POST as revoke } from '@/app/api/leaders/[id]/revoke/route';
-import { POST as consume } from '@/app/api/leader/auth/route';
-import LeaderAuthPage from '@/app/leader/auth/[token]/page';
 import { resetDb } from '../setup/db';
 import { makeRequest, readSetCookies } from '../setup/request';
 
@@ -18,8 +14,9 @@ const noParams = { params: Promise.resolve({}) };
 const idParams = (id: string) => ({ params: Promise.resolve({ id }) });
 let ownerCookie: Record<string, string>;
 
+const ask = (body: Record<string, string>, ip = '5.5.5.5') => requestAccess(makeRequest('POST', '/api/leaders/request', { body, ip }), noParams);
 async function newLeader(email = 'khalid@uqu.edu.sa') {
-  const res = await requestAccess(makeRequest('POST', '/api/leaders/request', { body: { name: 'خالد الحربي', email, committee: 'العلاقات' }, ip: '5.5.5.5' }), noParams);
+  const res = await ask({ name: 'خالد الحربي', email, committee: 'العلاقات' });
   expect(res.status).toBe(200);
   const [l] = await sql`select * from leaders where email = ${email}`;
   return l;
@@ -27,10 +24,8 @@ async function newLeader(email = 'khalid@uqu.edu.sa') {
 async function approveLeader(id: string) {
   const res = await approve(makeRequest('POST', `/api/leaders/${id}/approve`, { cookies: ownerCookie }), idParams(id));
   expect(res.status).toBe(200);
-  return (await res.json()).loginUrl as string;
 }
-const tokenOf = (url: string) => url.split('/').pop()!;
-const consumeToken = (token: string) => consume(makeRequest('POST', '/api/leader/auth', { body: { token } }), noParams);
+const sessionOf = (res: Response) => decodeURIComponent(readSetCookies(res)[LEADER_COOKIE].value);
 
 describe('leader email normalization', () => {
   it('accepts uqu.edu.sa with whitespace and case', () => {
@@ -76,59 +71,46 @@ describe('leader access', () => {
     expect((await res.json()).error.code).toBe('invalid_email');
   });
 
-  it('approval returns a one-time link and stores only its hash', async () => {
+  it('approval needs no link: the approved email signs in with a 180-day leader session', async () => {
     const l = await newLeader();
-    const url = await approveLeader(l.id);
-    expect(url).toMatch(/\/leader\/auth\/[A-Za-z0-9_-]{43}$/);
-    const [t] = await sql`select token_hash from login_tokens where leader_id = ${l.id}`;
-    expect(t.token_hash).toBe(sha256(tokenOf(url)));
-    const [after] = await sql`select status from leaders where id = ${l.id}`;
-    expect(after.status).toBe('approved');
-  });
-
-  it('a link works once and starts a 180-day leader session', async () => {
-    const l = await newLeader();
-    const token = tokenOf(await approveLeader(l.id));
-    const ok = await consumeToken(token);
-    expect(ok.status).toBe(200);
-    const c = readSetCookies(ok)[LEADER_COOKIE];
+    await approveLeader(l.id);
+    const res = await ask({ email: ' Khalid@UQU.edu.sa ' }, '6.6.6.6');
+    expect(await res.json()).toEqual({ status: 'approved', redirect: '/leader' });
+    const c = readSetCookies(res)[LEADER_COOKIE];
     expect(c.attrs).toMatch(/Max-Age=15552000/);
-    expect(await getSession(decodeURIComponent(c.value), 'leader')).toMatchObject({ leaderId: l.id });
-    const again = await consumeToken(token);
-    expect(again.status).toBe(410);
-    expect((await again.json()).error.code).toBe('link_expired');
+    expect(await getSession(sessionOf(res), 'leader')).toMatchObject({ leaderId: l.id });
   });
 
-  it('a link expires after 24 hours', async () => {
-    const l = await newLeader();
-    const token = tokenOf(await approveLeader(l.id));
-    await sql`update login_tokens set expires_at = now() - interval '1 second'`;
-    expect((await consumeToken(token)).status).toBe(410);
+  it('a pending email gets its status but no session', async () => {
+    await newLeader();
+    const res = await ask({ email: 'khalid@uqu.edu.sa' });
+    expect(await res.json()).toEqual({ status: 'pending' });
+    expect(readSetCookies(res)[LEADER_COOKIE]).toBeUndefined();
   });
 
-  it('re-issuing invalidates the previous unused link', async () => {
-    const l = await newLeader();
-    const first = tokenOf(await approveLeader(l.id));
-    const res = await reissue(makeRequest('POST', `/api/leaders/${l.id}/link`, { cookies: ownerCookie }), idParams(l.id));
-    const second = tokenOf((await res.json()).loginUrl);
-    expect((await consumeToken(first)).status).toBe(410);
-    expect((await consumeToken(second)).status).toBe(200);
+  it('a first request without a name or committee asks for them', async () => {
+    const res = await ask({ email: 'new@uqu.edu.sa', name: '', committee: '' });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error.code).toBe('details_required');
+    const [{ n }] = await sql`select count(*)::int as n from leaders`;
+    expect(n).toBe(0);
   });
 
-  it('rendering the auth page does not consume the token (link previews)', async () => {
+  it('an approved leader can sign in again many times a day (no per-email request limit)', async () => {
     const l = await newLeader();
-    const token = tokenOf(await approveLeader(l.id));
-    await LeaderAuthPage({ params: Promise.resolve({ token }) });
-    const [t] = await sql`select used_at from login_tokens where leader_id = ${l.id}`;
-    expect(t.used_at).toBeNull();
+    await approveLeader(l.id);
+    for (let i = 0; i < 6; i++) expect((await ask({ email: 'khalid@uqu.edu.sa' }, `8.8.8.${i}`)).status).toBe(200);
   });
 
-  it('revoking ends existing sessions', async () => {
+  it('a revoked email cannot sign in, and revoking ends existing sessions', async () => {
     const l = await newLeader();
-    const ok = await consumeToken(tokenOf(await approveLeader(l.id)));
-    const session = decodeURIComponent(readSetCookies(ok)[LEADER_COOKIE].value);
+    await approveLeader(l.id);
+    const session = sessionOf(await ask({ email: 'khalid@uqu.edu.sa' }));
     await revoke(makeRequest('POST', `/api/leaders/${l.id}/revoke`, { cookies: ownerCookie }), idParams(l.id));
     expect(await getSession(session, 'leader')).toBeNull();
+    const again = await ask({ email: 'khalid@uqu.edu.sa' });
+    expect(await again.json()).toEqual({ status: 'revoked' });
+    expect(readSetCookies(again)[LEADER_COOKIE]).toBeUndefined();
   });
 
   it('only the owner can approve', async () => {
@@ -137,13 +119,13 @@ describe('leader access', () => {
     expect(res.status).toBe(401);
   });
 
-  it('writes audit rows for approve, link issue and revoke', async () => {
+  it('writes audit rows for approve, sign-in and revoke', async () => {
     const l = await newLeader();
     await approveLeader(l.id);
-    await reissue(makeRequest('POST', `/api/leaders/${l.id}/link`, { cookies: ownerCookie }), idParams(l.id));
+    await ask({ email: 'khalid@uqu.edu.sa' });
     await revoke(makeRequest('POST', `/api/leaders/${l.id}/revoke`, { cookies: ownerCookie }), idParams(l.id));
     const rows = await sql`select action from audit_log where target = ${l.id} order by at`;
-    expect(rows.map((r) => r.action)).toEqual(['leader.approve', 'leader.link', 'leader.link', 'leader.revoke']);
+    expect(rows.map((r) => r.action)).toEqual(['leader.approve', 'leader.login', 'leader.revoke']);
   });
 
   it('rate-limits repeated requests from one IP', async () => {

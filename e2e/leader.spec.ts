@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { db, reset, loginOwner } from './db';
 import { E2E } from './config';
 
-test('full leader flow: access request → approval → one-time login → names → approval with exclusion → links', async ({ page, browser }) => {
+test('full leader flow: access request → approval → email sign-in → names → approval with exclusion → links', async ({ page, browser }) => {
   await reset();
   const [ev] = await db`insert into events (title, subtitle, latin_title, track, starts_at, place_type, place_name, place_url)
     values ('ثورة الصواريخ', 'أسبوع الفلك والفضاء 2026', 'ROCKET REVOLUTION', 'space', now() + interval '20 days', 'in_person', 'القاعة', 'https://maps.example.com/x') returning id`;
@@ -18,17 +18,18 @@ test('full leader flow: access request → approval → one-time login → names
   await page.getByRole('button', { name: 'طلب الدخول' }).click();
   await expect(page.getByText('وصل طلبك')).toBeVisible();
 
-  // 2. owner approves (API) and gets the one-time link
+  // 2. owner approves (API) — no link to send
   const owner = await browser.newContext({ baseURL: E2E.baseURL });
   const ownerPage = await owner.newPage();
   await loginOwner(ownerPage);
   const [leader] = await db`select id from leaders where email = 'khalid@uqu.edu.sa'`;
   const approve = await ownerPage.request.post(`/api/leaders/${leader.id}/approve`, { headers: { origin: E2E.baseURL } });
-  const { loginUrl } = await approve.json();
+  expect(approve.ok()).toBe(true);
 
-  // 3. leader opens the link and presses «دخول»
-  await page.goto(new URL(loginUrl).pathname);
-  await page.getByRole('button', { name: 'دخول' }).click();
+  // 3. the leader signs in with the email alone
+  await page.goto('/');
+  await page.getByLabel('بريدك الجامعي').fill('khalid@uqu.edu.sa');
+  await page.getByRole('button', { name: 'طلب الدخول' }).click();
   await expect(page).toHaveURL(/\/leader$/);
   await expect(page.getByText('ثورة الصواريخ').first()).toBeVisible();
   await expect(page.getByText('فعالية لجنة أخرى')).toHaveCount(0);

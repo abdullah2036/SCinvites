@@ -12,10 +12,11 @@ const optText = (max: number) =>
     .transform((s) => s || null)
     .nullish();
 
+// Name and committee are only needed the first time; an approved email signs in on its own.
 export const LeaderRequestInput = z.object({
-  name: text(2, 80),
+  name: text(0, 80).optional(),
   email: text(3, 120),
-  committee: text(2, 60),
+  committee: text(0, 60).optional(),
 });
 
 export const PlaceInput = z.object({

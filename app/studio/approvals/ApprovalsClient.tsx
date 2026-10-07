@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardDarkView from '@/components/boards/DashboardDarkView';
 import { PALETTE, TRACK_INFO } from '@/components/invitation/palette';
@@ -23,11 +23,18 @@ function daysLeft(iso: string) {
 }
 
 export default function ApprovalsClient({ requests: initial }: { requests: PendingRequest[]; now?: number }) {
-  // Local copy: router.refresh() (for the sidebar badge) must not drop decided requests from this screen.
-  const [requests] = useState(initial);
+  // Local copy: router.refresh() (sidebar badge, auto-refresh) must not drop decided requests from this screen;
+  // requests that arrive meanwhile are appended.
+  const [requests, setRequests] = useState(initial);
   const router = useRouter();
   const [sel, setSel] = useState(0);
   const [states, setStates] = useState<State[]>(() => requests.map(() => 'بانتظار'));
+  useEffect(() => {
+    const fresh = initial.filter((r) => !requests.some((x) => x.id === r.id));
+    if (!fresh.length) return;
+    setRequests((all) => [...all, ...fresh]); // eslint-disable-line react-hooks/set-state-in-effect
+    setStates((st) => [...st, ...fresh.map((): State => 'بانتظار')]);
+  }, [initial, requests]);
   const [off, setOff] = useState<Record<string, boolean>>({});
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);

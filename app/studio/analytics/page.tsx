@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: 'الإحصائيات — منصة ا
 export default async function AnalyticsPage() {
   const [analytics, semesters, events] = await Promise.all([getAnalytics({}), listSemesters(), listEvents()]);
   return (
-    <Studio active="analytics">
+    <Studio active="analytics" live={false}>
       <AnalyticsClient initial={analytics} semesters={semesters} events={events.map((e) => ({ id: e.id, title: e.title }))} />
     </Studio>
   );

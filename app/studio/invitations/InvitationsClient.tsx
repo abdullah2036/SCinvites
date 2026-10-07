@@ -27,6 +27,12 @@ const day = (iso: string) => new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab
 
 export default function InvitationsClient({ items: initial }: { items: InvitationListItem[] }) {
   const [items, setItems] = useState(initial);
+  // New invitations and opens arrive via auto-refresh: take the server's list whenever it changes.
+  const [seen, setSeen] = useState(initial);
+  if (seen !== initial) {
+    setSeen(initial);
+    setItems(initial);
+  }
   const [q, setQ] = useState('');
   const [f, setF] = useState(0);
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);

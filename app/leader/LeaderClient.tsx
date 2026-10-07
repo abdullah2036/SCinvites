@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import LeaderView from '@/components/boards/LeaderView';
 import LogoutButton from '@/components/shell/LogoutButton';
+import AutoRefresh from '@/components/shell/AutoRefresh';
 import { PALETTE, TRACK_INFO } from '@/components/invitation/palette';
 import { taggedUrl } from '@/lib/shared/source';
 import type { LeaderRequestItem } from '@/lib/server/requests';
@@ -44,6 +45,8 @@ export default function LeaderClient({ leader, templates, requests }: { leader: 
     setTimeout(() => setCopied(null), 1600);
   }
 
+  // Without a template there is nothing to create yet: say so plainly instead of leaving dead buttons.
+  const noTemplatesText = `لا توجد قوالب للجنة «${leader.committee}» بعد. عندما تعتمد صاحبة المنصة قالبًا للجنتك يظهر هنا مباشرة وتقدر تنشئ الدعوات`;
   const first = leader.name.replace(/^(د|أ|م|كابتن)\.?\s*/, '').trim();
   const v = {
     createHref: templates[0] ? `/leader/create/${templates[0].id}` : '#templates',
@@ -78,6 +81,12 @@ export default function LeaderClient({ leader, templates, requests }: { leader: 
     }),
     overlay: (
       <>
+        <AutoRefresh />
+        {!templates.length && !error && (
+          <div role="status" className="glass" style={{ position: 'fixed', insetInline: 16, bottom: 150, zIndex: 30, maxWidth: 460, margin: '0 auto', borderRadius: 18, padding: '12px 16px', color: '#0B3B41', textAlign: 'center', fontSize: 14, lineHeight: 1.7 }}>
+            {noTemplatesText}
+          </div>
+        )}
         <div id="account" style={{ position: 'fixed', insetInlineStart: 16, bottom: 92, zIndex: 25 }}>
           <LogoutButton endpoint="/api/leader/logout" />
         </div>

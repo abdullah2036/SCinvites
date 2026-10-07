@@ -27,17 +27,19 @@ export default function MainClient() {
 
   const m = mail.trim();
   const ok = /^[^\s@]+@uqu\.edu\.sa$/i.test(m);
-  const ready = ok && name.trim().length >= 2 && committee.trim().length >= 2;
+  // An approved email signs in on its own; name and committee are only needed for a first request (the server says so).
+  const ready = ok;
 
   async function ask() {
-    if (!ready || busy) {
-      if (ok && !ready) setServerMsg('اكتب اسمك ولجنتك');
-      return;
-    }
+    if (!ready || busy) return;
     setBusy(true);
     setServerMsg('');
     try {
       const r = await postJson('/api/leaders/request', { name, email: m, committee });
+      if (r.redirect) {
+        location.assign(r.redirect);
+        return;
+      }
       setStatus(r.status);
       setStep('wait');
     } catch (e) {
@@ -82,7 +84,7 @@ export default function MainClient() {
         ? 'اطلب رابط الدخول من صاحبة المنصة، يصلك على الواتساب ويفتح البوابة على جوالك'
         : status === 'revoked'
           ? 'تواصل مع صاحبة المنصة إذا كان هذا خطأ'
-          : 'أول ما يُعتمد بريدك يصلك رابط دخول على الواتساب، وتقدر تدخل من جوالك مباشرة',
+          : 'أول ما تعتمد صاحبة المنصة بريدك، ادخل من هنا ببريدك الجامعي فقط بدون كلمة سر',
     gate,
     openGate: () => setGate(true),
     closeGate: () => {
