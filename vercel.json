@@ -1,8 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["hnd1"],
+  "installCommand": "npm ci",
+  "regions": [
+    "hnd1"
+  ],
   "crons": [
-    { "path": "/api/health", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/retention", "schedule": "30 3 * * *" }
+    {
+      "path": "/api/health",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/retention",
+      "schedule": "30 3 * * *"
+    }
   ]
 }
