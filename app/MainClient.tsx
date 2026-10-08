@@ -15,7 +15,7 @@ async function postJson(url: string, body: unknown) {
   return data;
 }
 
-export default function MainClient({ ownerHref = null }: { ownerHref?: string | null }) {
+export default function MainClient() {
   const [name, setName] = useState('');
   const [mail, setMail] = useState('');
   const [step, setStep] = useState<'mail' | 'wait'>('mail');
@@ -141,7 +141,7 @@ export default function MainClient({ ownerHref = null }: { ownerHref?: string | 
       </div>
     ),
     gate,
-    openGate: () => (ownerHref ? location.assign(ownerHref) : setGate(true)),
+    openGate: () => setGate(true),
     closeGate: () => {
       setGate(false);
       setPass('');
