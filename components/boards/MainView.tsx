@@ -548,10 +548,14 @@ Au
         <div style={S({ position: "fixed", inset: "0", zIndex: "30", background: "rgba(7,37,41,.35)", WebkitBackdropFilter: "blur(10px)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" })}>
           <div className="inA glass" style={S({ width: "100%", maxWidth: "360px", borderRadius: "30px", padding: "26px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: "14px", alignItems: "center", textAlign: "center" })}>
             <img src="/brand/logo-128.png" alt="" style={S({ height: "64px", width: "auto" })} />
-            <input className="field" type="password" value={v.pass} onChange={v.onPass} aria-label="كلمة السر" placeholder="••••••" autoFocus onKeyDown={v.passKey} autoComplete="current-password" style={S({ width: "100%", boxSizing: "border-box", height: "54px", border: "1px solid rgba(255,255,255,.95)", borderRadius: "999px", padding: "0 22px", fontFamily: "TS, sans-serif", fontSize: "22px", letterSpacing: "6px", textAlign: "center", background: "rgba(255,255,255,.8)" })} />
-            <button type="button" onClick={v.login} disabled={v.passBusy} style={S({ width: "100%", height: "50px", borderRadius: "999px", background: "#0B3B41", color: "#FFFFFF", border: "0", cursor: "pointer", fontFamily: "TS, sans-serif", fontSize: "16px", fontWeight: "700", display: "flex", alignItems: "center", justifyContent: "center", opacity: v.passOp })}>
+            <form onSubmit={v.submitLogin} method="post" action="/api/owner/login" style={S({ width: "100%", display: "flex", flexDirection: "column", gap: "14px" })}>
+            {/* password managers need a username next to the password */}
+            <input type="text" name="username" autoComplete="username" value="صاحبة المنصة" readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
+            <input className="field" type="password" name="password" id="owner-password" value={v.pass} onChange={v.onPass} aria-label="كلمة السر" placeholder="••••••" autoFocus autoComplete="current-password" style={S({ width: "100%", boxSizing: "border-box", height: "54px", border: "1px solid rgba(255,255,255,.95)", borderRadius: "999px", padding: "0 22px", fontFamily: "TS, sans-serif", fontSize: "22px", letterSpacing: "6px", textAlign: "center", background: "rgba(255,255,255,.8)" })} />
+            <button type="submit" disabled={v.passBusy} style={S({ width: "100%", height: "50px", borderRadius: "999px", background: "#0B3B41", color: "#FFFFFF", border: "0", cursor: "pointer", fontFamily: "TS, sans-serif", fontSize: "16px", fontWeight: "700", display: "flex", alignItems: "center", justifyContent: "center", opacity: v.passOp })}>
 دخول
             </button>
+            </form>
             {v.passError ? <span role="alert" style={S({ fontSize: "13px", color: "#B5533F" })}>{v.passError}</span> : null}
             <button type="button" onClick={v.closeGate} style={S({ border: "0", background: "transparent", color: "#4F6567", fontFamily: "TS, sans-serif", fontSize: "13px", cursor: "pointer" })}>
 إغلاق

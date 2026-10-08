@@ -8,6 +8,7 @@ import { taggedUrl } from '@/lib/shared/source';
 import type { GuestView, InvitationListItem, InvitationStatus } from '@/lib/shared/types';
 import { timeoutSignal } from '@/lib/shared/timeout';
 import { copyText } from '@/lib/shared/copy';
+import Visitors from './Visitors';
 
 const TILE: Record<string, string> = { club: '#13707B', space: '#0B3B41', chem: '#2F8C8A', phys: '#6FB7B8', bio: '#4F8F7E', math: '#C99A2E', sport: '#E0B95A' };
 const FILTERS: [string, InvitationStatus | null, string][] = [
@@ -138,8 +139,11 @@ export default function InvitationsClient({ items: initial }: { items: Invitatio
         manage: () => setManage({ item: i, name: i.inviteeName ?? '', org: i.inviteeOrg ?? '', title: i.inviteeTitle ?? '' }),
       };
     }),
-    empty: rows.length ? null : (
-      <div style={{ padding: '28px 10px', textAlign: 'center', color: '#4F6567', fontSize: 14 }}>{items.length ? 'لا توجد دعوات بهذه التصفية' : 'لم تُنشأ أي دعوة بعد'}</div>
+    empty: (
+      <>
+        <Visitors />
+        {!rows.length && <div style={{ flexBasis: '100%', padding: '28px 10px', textAlign: 'center', color: '#4F6567', fontSize: 14 }}>{items.length ? 'لا توجد دعوات بهذه التصفية' : 'لم تُنشأ أي دعوة بعد'}</div>}
+      </>
     ),
     overlay: (
       <>

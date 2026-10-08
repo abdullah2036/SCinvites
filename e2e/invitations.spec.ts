@@ -54,3 +54,22 @@ test('empty list shows a friendly message', async ({ page }) => {
   await page.goto(`/${E2E.ownerPath}/invitations`);
   await expect(page.getByText('لم تُنشأ أي دعوة بعد')).toBeVisible();
 });
+
+test('the owner sees every visitor who registered through a public link, with email and answer', async ({ page }) => {
+  await reset();
+  await seedInvitations();
+  const [inv] = await db`select id from invitations where slug = 'rr26'`;
+  const [r1] = await db`insert into registrations (invitation_id, name, email) values (${inv.id}, 'ريم الزهراني', 'reem@example.com') returning id`;
+  await db`insert into registrations (invitation_id, name, email) values (${inv.id}, 'سارة القرني', 'sara@example.com')`;
+  await db`insert into rsvps (invitation_id, registration_id, answer) values (${inv.id}, ${r1.id}, 'yes')`;
+  await loginOwner(page);
+  await page.goto(`/${E2E.ownerPath}/invitations`);
+  await page.waitForLoadState('networkidle');
+  await page.getByRole('button', { name: /قائمة الزوار/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'قائمة الزوار' });
+  await expect(dialog.getByText('ريم الزهراني')).toBeVisible();
+  await expect(dialog.getByText('reem@example.com')).toBeVisible();
+  await expect(dialog.getByText('سيحضر', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('sara@example.com')).toBeVisible();
+  await expect(dialog.getByText('لم يرد بعد')).toBeVisible();
+});

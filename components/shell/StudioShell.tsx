@@ -95,7 +95,7 @@ export default function StudioShell({
         })}
       >
         {on && <span style={S({ position: 'absolute', left: '-16px', top: '9px', width: '4px', height: '26px', borderRadius: '4px', background: '#13707B' })} />}
-        <NavPending />
+        <NavPending href={href} />
         {icon(key)}
         {label}
         {badgeFor(key) > 0 && (
@@ -114,7 +114,7 @@ export default function StudioShell({
       aria-current={key === active ? 'page' : undefined}
       style={S({ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', fontSize: '11px', textDecoration: 'none', ...(key === active ? { color: '#0B3B41', fontWeight: '700' } : { color: '#4F6567' }) })}
     >
-      <NavPending />
+      <NavPending href={href} />
       {icon(key, 20)}
       {label}
       {badgeFor(key) > 0 && (
@@ -143,7 +143,7 @@ export default function StudioShell({
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B2B30" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
               <path d="M12 5v14M5 12h14" />
             </svg>
-            <NavPending />
+            <NavPending href={`${base}/create`} />
             إنشاء دعوة
           </Link>
           <div style={S({ display: 'flex', flexDirection: 'column', gap: '2px' })}>
@@ -171,7 +171,7 @@ export default function StudioShell({
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B2B30" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
               <path d="M12 5v14M5 12h14" />
             </svg>
-            <NavPending />
+            <NavPending href={`${base}/create`} />
           </Link>
           {bottom('approvals', 'الاعتماد', `${base}/approvals`)}
           {bottom('settings', 'الإعدادات', `${base}/settings`)}

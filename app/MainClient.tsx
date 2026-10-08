@@ -15,7 +15,7 @@ async function postJson(url: string, body: unknown) {
   return data;
 }
 
-export default function MainClient() {
+export default function MainClient({ ownerHref = null }: { ownerHref?: string | null }) {
   const [name, setName] = useState('');
   const [mail, setMail] = useState('');
   const [step, setStep] = useState<'mail' | 'wait'>('mail');
@@ -141,7 +141,7 @@ export default function MainClient() {
       </div>
     ),
     gate,
-    openGate: () => setGate(true),
+    openGate: () => (ownerHref ? location.assign(ownerHref) : setGate(true)),
     closeGate: () => {
       setGate(false);
       setPass('');
@@ -149,8 +149,10 @@ export default function MainClient() {
     },
     pass,
     onPass: (e: React.ChangeEvent<HTMLInputElement>) => setPass(e.target.value),
-    passKey: (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') login();
+    // A real form submit lets Chrome and Safari offer to save the password.
+    submitLogin: (e: React.FormEvent) => {
+      e.preventDefault();
+      login();
     },
     passOp: pass.length >= 4 ? 1 : 0.5,
     passBusy,

@@ -50,7 +50,7 @@ export default function InviteView({ v }: { v: any }) {
         {v.notLoad ? (
           <>
           {/* the hero takes whatever height is left, so the motion always has room and nothing sits empty */}
-          <div className={v.inK} style={S({ flex: "1", display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: "10px", padding: "18px 24px 10px", margin: "0 -16px", background: "linear-gradient(0deg, color-mix(in srgb, var(--sc) 88%, transparent) 0%, color-mix(in srgb, var(--sc) 60%, transparent) 45%, transparent 100%)" })}>
+          <div className={v.inK} style={S({ flex: "1", display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: "10px", padding: "18px 24px 10px", margin: "0 -16px" })}>
             <span style={S({ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: "8px", padding: "6px 14px", borderRadius: "999px", fontSize: "14px", fontWeight: "500", lineHeight: "1.5", background: "color-mix(in srgb, var(--tx) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--tx) 22%, transparent)", WebkitBackdropFilter: "blur(12px)", backdropFilter: "blur(12px)" })}>
               <span style={S({ width: "7px", height: "7px", borderRadius: "50%", background: "var(--c2)" })} />
 {v.t.event}

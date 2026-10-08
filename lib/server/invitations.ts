@@ -138,3 +138,17 @@ export async function createInvitationBatch(input: BatchInput): Promise<{ id: st
     return out;
   }) as Promise<{ id: string; slug: string; url: string; name: string }[]>;
 }
+
+export type RegistrationRow = { id: string; name: string; email: string; answer: 'yes' | 'no' | null; createdAt: string; eventTitle: string; stamp: string; slug: string };
+
+/** Everyone who registered through a public link (name + email) with their latest answer, newest first. */
+export async function listRegistrations(): Promise<RegistrationRow[]> {
+  const rows = await sql<(Omit<RegistrationRow, 'createdAt'> & { createdAt: Date })[]>`
+    select r.id, r.name, r.email, r.created_at as "createdAt", e.title as "eventTitle", i.stamp, i.slug,
+           (select v.answer from rsvps v where v.registration_id = r.id order by v.answered_at desc limit 1) as answer
+    from registrations r join invitations i on i.id = r.invitation_id join templates t on t.id = i.template_id join events e on e.id = t.event_id
+    where r.anonymized_at is null
+    order by r.created_at desc
+    limit 5000`;
+  return rows.map((r) => ({ ...r, createdAt: new Date(r.createdAt).toISOString() }));
+}
