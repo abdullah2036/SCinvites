@@ -2,11 +2,13 @@
 
 An Arabic (right-to-left) digital invitation platform built for the **Science Club at Umm Al-Qura University**, where it is used to invite guests, members and VIPs to club events, collect RSVPs and follow attendance live.
 
-Built together with the club leader who owns the platform (product owner); design, engineering and operations by me. The deployment is private to the club, so there is no public demo; the screenshots below use test data.
+Built together with the club leader who owns the platform: they led the product and the visual design; I turned it into the working platform and run it (engineering, deployment, operations). The deployment is private to the club, so there is no public demo; the screenshots below use test data.
 
-<!-- Screenshots: put the images in docs/screenshots/ and list them here, e.g.
-![Home](docs/screenshots/home.png)
--->
+![Home page: sign-in for club leaders and the event designs](docs/screenshots/home.webp)
+
+| Leader workspace | Creating an invitation (live preview) |
+|---|---|
+| ![Leader dashboard with approved templates and requests](docs/screenshots/leader-dashboard.webp) | ![Step-by-step invitation creation with a live phone preview](docs/screenshots/create-invitation.webp) |
 
 ## What it does
 
@@ -36,6 +38,15 @@ flowchart LR
   CRON[Vercel Cron + pg_cron] --> DB
   GH[GitHub Actions<br/>CI · load test] --> APP
 ```
+
+<details>
+<summary>Full module map and database schema</summary>
+
+![Module map: visitors, leaders and the owner through the app's services to the shared platform](docs/screenshots/architecture.webp)
+
+![Database schema](docs/screenshots/database-schema.webp)
+
+</details>
 
 - **Server-only data access**: every query runs on the server through one module; the database has row-level security on with no public policies, so the browser never talks to it directly.
 - **Sessions**: random tokens stored only as SHA-256 hashes; the owner password is bcrypt-hashed; the owner area lives on a secret path and returns 404 to everyone else.
