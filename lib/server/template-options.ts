@@ -18,5 +18,7 @@ export function toTemplateOption(t: TemplateWithEvent): TemplateOption {
     artworkUrl: artworkUrl(t.artwork_path),
     place: { type: t.event_place_type as TemplateOption['place']['type'], name: t.event_place_name, url: t.event_place_url },
     deadline: new Date(startsAt.getTime() - t.request_deadline_days * 86400_000).toISOString(),
+    availableFrom: t.available_from ? new Date(t.available_from).toISOString() : null,
+    availableTo: t.available_to ? new Date(t.available_to).toISOString() : null,
   };
 }

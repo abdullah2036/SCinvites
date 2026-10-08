@@ -22,6 +22,9 @@ export type TemplateOption = {
   artworkUrl: string | null;
   place: { type: PlaceType; name: string | null; url: string | null };
   deadline?: string | null;
+  /** «متاح من / إلى» set by the owner: shown to leaders for information, never used to hide the template. */
+  availableFrom?: string | null;
+  availableTo?: string | null;
 };
 
 type Mode = 'owner' | 'leader';

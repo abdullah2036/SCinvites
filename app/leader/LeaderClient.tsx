@@ -103,7 +103,7 @@ export default function LeaderClient({ leader, templates, requests }: { leader: 
     pubs: templates.map((t) => ({
       event: t.eventSubtitle ?? TRACK_INFO[t.track].name,
       title: t.eventTitle,
-      kind: `${t.stampTypes.filter((s) => s !== 'عضو').join(' · ')} · ${TRACK_INFO[t.track].name}`,
+      kind: `${t.stampTypes.filter((s) => s !== 'عضو').join(' · ')} · ${TRACK_INFO[t.track].name}${t.availableFrom || t.availableTo ? ` · متاح ${t.availableFrom ? `من ${day(t.availableFrom)} ` : ''}${t.availableTo ? `إلى ${day(t.availableTo)}` : ''}`.trimEnd() : ''}`,
       pub: day(t.startsAt),
       due: t.deadline ? day(t.deadline) : '—',
       bg: PALETTE[t.allowedColors[0] ?? 'night'].bg,

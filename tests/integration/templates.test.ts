@@ -105,13 +105,13 @@ describe('templates', () => {
     const onDraftEvent = await makeTemplate({ event_id: draftEvent.id });
     const onArchived = await makeTemplate({ event_id: archived.id });
     const past = await makeEvent({ starts_at: new Date(now - 3 * day) });
-    const later = await makeTemplate({ event_id: active.id, available_from: new Date(now + day) }); // old window: ignored
-    const over = await makeTemplate({ event_id: past.id });
+    const later = await makeTemplate({ event_id: active.id, available_from: new Date(now + day) }); // «متاح من» in the future: still shown
+    const over = await makeTemplate({ event_id: past.id, available_to: new Date(now - day) }); // past event and dates: still shown
     const reasons = Object.fromEntries((await listTemplates()).map((t) => [t.id, t.hidden_reason]));
     expect(reasons).toEqual({
-      [ok.id]: null, [draft.id]: 'not_approved', [onDraftEvent.id]: 'event_draft', [onArchived.id]: 'event_archived', [later.id]: null, [over.id]: 'event_over',
+      [ok.id]: null, [draft.id]: 'not_approved', [onDraftEvent.id]: 'event_draft', [onArchived.id]: 'event_archived', [later.id]: null, [over.id]: null,
     });
-    expect((await templatesVisibleToLeaders()).map((t) => t.id).sort()).toEqual([ok.id, later.id].sort());
+    expect((await templatesVisibleToLeaders()).map((t) => t.id).sort()).toEqual([ok.id, later.id, over.id].sort()); // dates never hide
   });
 
   it('gallery lists approved templates only, filterable by track and stamp', async () => {

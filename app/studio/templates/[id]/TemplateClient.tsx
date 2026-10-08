@@ -7,6 +7,7 @@ import Invitation from '@/components/invitation/Invitation';
 import { PALETTE, TRACK_INFO, paletteVars } from '@/components/invitation/palette';
 import { TRACKS, COLORS, STAMPS, type Color, type Track, type GuestView, type PlaceType } from '@/lib/shared/types';
 import { timeoutSignal } from '@/lib/shared/timeout';
+import { riyadhDay } from '@/lib/shared/dates';
 
 export type TemplateDraft = {
   id: string | null;
@@ -25,6 +26,8 @@ export type TemplateDraft = {
 
 export type EventChoice = { id: string; status: 'draft' | 'active' | 'archived'; title: string; subtitle: string | null; latinTitle: string | null; startsAt: string; place: { type: PlaceType; name: string | null; url: string | null } };
 
+const toDay = (iso: string | null) => riyadhDay(iso);
+const fromDay = (d: string, endOfDay = false) => (d ? new Date(`${d}T${endOfDay ? '23:59:59' : '00:00:00'}+03:00`).toISOString() : null);
 const field: React.CSSProperties = { height: 44, borderRadius: 999, padding: '0 14px', border: '1px solid rgba(255,255,255,.95)', background: 'rgba(255,255,255,.78)', color: '#18292C', fontSize: 14, width: '100%', boxSizing: 'border-box' };
 const label: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: '#3E5456' };
 
@@ -52,7 +55,6 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
   const [now] = useState(() => Date.now());
   const visibility = (() => {
     if (ev?.status === 'draft') return { warn: true, text: `الفعالية «${ev.title}» مسودة: لن يظهر القالب للقادة حتى تجعليها «فعّالة» من صفحة الفعاليات` };
-    if (ev && new Date(ev.startsAt).getTime() + 86400_000 < now) return { warn: true, text: 'هذه الفعالية انتهت، فلن يظهر القالب للقادة' };
     if (ev && new Date(ev.startsAt).getTime() - t.requestDeadlineDays * 86400_000 < now) return { warn: true, text: 'يظهر للقادة، لكن انتهى موعد الطلبات لهذه الفعالية فلن يستطيعوا إرسال أسماء' };
     return { warn: false, text: 'بعد الاعتماد يظهر مباشرة لكل القادة المعتمدين' };
   })();
@@ -68,9 +70,8 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
       allowedColors: t.allowedColors,
       stampTypes: t.stampTypes,
       artworkPath: t.artworkPath,
-      // the availability window is no longer used; saving clears any old dates
-      availableFrom: null,
-      availableTo: null,
+      availableFrom: t.availableFrom,
+      availableTo: t.availableTo,
       requestDeadlineDays: t.requestDeadlineDays,
     };
   }
@@ -241,6 +242,17 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
             ))}
           </select>
         </label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <label style={label}>
+            متاح من
+            <input type="date" value={toDay(t.availableFrom)} onChange={(e) => set({ availableFrom: fromDay(e.target.value) })} className="field" style={field} />
+          </label>
+          <label style={label}>
+            إلى
+            <input type="date" value={toDay(t.availableTo)} onChange={(e) => set({ availableTo: fromDay(e.target.value, true) })} className="field" style={field} />
+          </label>
+        </div>
+        <span style={{ fontSize: 12, color: '#4F6567', marginTop: -4 }}>تظهر هذه التواريخ للقادة على القالب للعلم فقط، ولا تخفيه عنهم</span>
         <p role="status" style={{ margin: 0, fontSize: 12, lineHeight: 1.7, color: visibility.warn ? '#9B3B2E' : '#3E5456' }}>
           {visibility.text}
         </p>

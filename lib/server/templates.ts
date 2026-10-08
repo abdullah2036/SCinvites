@@ -100,39 +100,38 @@ export async function approveTemplate(id: string): Promise<TemplateRow> {
 }
 
 /** Owner list: current versions (drafts and approved), newest first. */
-export async function listTemplates(now = new Date()): Promise<(TemplateWithEvent & { hidden_reason: HiddenReason })[]> {
+export async function listTemplates(): Promise<(TemplateWithEvent & { hidden_reason: HiddenReason })[]> {
   return sql<(TemplateWithEvent & { hidden_reason: HiddenReason })[]>`
-    ${withEvent(sql`, ${hiddenReason(now)} as hidden_reason`)}
+    ${withEvent(sql`, ${hiddenReason()} as hidden_reason`)}
     where t.status <> 'superseded' order by t.created_at desc`;
 }
 
 /**
- * Why leaders can't see a template right now (null = they can). The one rule for both the leader page and the owner's
- * list. An approved template shows as soon as it is approved and until a day after its event; the old «متاح من / إلى»
- * window confused everyone (a future «متاح من» silently hid the only template), so it is no longer used.
+ * Why leaders can't see a template (null = they can). The one rule for both the leader page and the owner's list.
+ * Dates never hide a template: «متاح من / إلى» and the event date are shown to leaders, not used to filter.
+ * To take a template away, the owner sets its event to «مسودة» or «مؤرشفة», or deletes the template.
  */
-export type HiddenReason = 'not_approved' | 'event_draft' | 'event_archived' | 'event_over' | null;
-const hiddenReason = (now: Date) => sql`
+export type HiddenReason = 'not_approved' | 'event_draft' | 'event_archived' | null;
+const hiddenReason = () => sql`
   case when t.status <> 'approved' then 'not_approved'
        when e.status = 'draft' then 'event_draft'
        when e.status = 'archived' then 'event_archived'
-       when coalesce(e.ends_at, e.starts_at) + interval '1 day' < ${now} then 'event_over'
   end`;
 
 /** For the status page: how many current templates leaders can see, and why the others are hidden (counts only). */
-export async function leaderTemplateCounts(now = new Date()): Promise<Record<string, number>> {
+export async function leaderTemplateCounts(): Promise<Record<string, number>> {
   const rows = await sql<{ reason: string | null; n: number }[]>`
-    select ${hiddenReason(now)} as reason, count(*)::int as n
+    select ${hiddenReason()} as reason, count(*)::int as n
     from templates t join events e on e.id = t.event_id
     where t.status <> 'superseded' group by 1`;
   return Object.fromEntries(rows.map((r) => [r.reason ?? 'visible', r.n]));
 }
 
-/** Every approved leader sees every approved template of an active event that hasn't ended. */
-export async function templatesVisibleToLeaders(now = new Date()): Promise<TemplateWithEvent[]> {
+/** Every approved leader sees every approved template of an active event, whatever its dates. */
+export async function templatesVisibleToLeaders(): Promise<TemplateWithEvent[]> {
   return sql<TemplateWithEvent[]>`
     ${withEvent()}
-    where ${hiddenReason(now)} is null
+    where ${hiddenReason()} is null
     order by e.starts_at asc`;
 }
 

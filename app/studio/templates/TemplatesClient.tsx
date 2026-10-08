@@ -16,14 +16,13 @@ export type GalleryCard = {
   status: 'draft' | 'approved' | 'superseded';
   version: number;
   /** Why leaders can't see it now (null: they can). */
-  hidden: 'not_approved' | 'event_draft' | 'event_archived' | 'event_over' | null;
+  hidden: 'not_approved' | 'event_draft' | 'event_archived' | null;
 };
 
 const LEADERS: Record<NonNullable<GalleryCard['hidden']>, string> = {
   not_approved: 'مسودة: لا يراها القادة حتى تعتمديها',
   event_draft: 'لا يراه القادة: الفعالية مسودة',
   event_archived: 'لا يراه القادة: الفعالية مؤرشفة',
-  event_over: 'انتهت الفعالية',
 };
 const leadersLine = (h: GalleryCard['hidden']) => (h ? LEADERS[h] : 'يراه القادة ✓');
 

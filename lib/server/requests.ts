@@ -25,7 +25,7 @@ async function leaderOf(leaderId: string) {
 /** Template must be visible to the leader now, the colour/stamp allowed, and the deadline not passed. */
 async function checkTemplate(input: RequestInput) {
   const now = new Date();
-  const t = (await templatesVisibleToLeaders(now)).find((x) => x.id === input.templateId);
+  const t = (await templatesVisibleToLeaders()).find((x) => x.id === input.templateId);
   if (!t) throw new AppError('template_not_available', 403, 'هذا القالب غير متاح لك');
   if (!t.allowed_colors.includes(input.color)) throw new AppError('color_not_allowed', 400, 'هذا اللون غير متاح لهذا القالب');
   if (!t.stamp_types.includes(input.stamp)) throw new AppError('stamp_not_allowed', 400, 'هذا الختم غير متاح لهذا القالب');
