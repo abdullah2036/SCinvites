@@ -102,3 +102,5 @@ input,textarea,button,select{font-family:TS,sans-serif}
 .navbar-pending{position:fixed;top:0;left:0;right:0;height:3px;z-index:60;overflow:hidden;pointer-events:none;background:rgba(201,154,46,.25)}
 .navbar-pending::after{content:"";position:absolute;top:0;bottom:0;left:0;width:40%;background:#C99A2E;animation:navbar 1.1s ease-in-out infinite}
 @keyframes navbar{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+/* The club scene repeats the loader's logo: show it only once the invitation opens (its intro animations then start fresh). */
+[data-phase="load"] .club-scene{display:none}

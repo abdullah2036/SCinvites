@@ -122,6 +122,35 @@ describe('leader requests', () => {
     await expect(getRequestLinks(other.id, id)).rejects.toMatchObject({ status: 403 });
   });
 
+  it('a public-link request (no names) becomes one general invitation with its stamp, shown to its leader', async () => {
+    const { t, leader } = await setup();
+    vi.useFakeTimers({ now: new Date('2026-10-01T00:00:00Z'), toFake: ['Date'] });
+    const { id, count } = await submitRequest(leader.id, input(t.id, { kind: 'general', stamp: 'VIP', people: [] }));
+    expect(count).toBe(0);
+    // «عضو» is allowed on a public link even though the template's personal stamps don't include it
+    await submitRequest(leader.id, input(t.id, { kind: 'general', stamp: 'عضو', people: [] }));
+    await expect(submitRequest(leader.id, input(t.id, { kind: 'personal', stamp: 'عضو' }))).rejects.toMatchObject({ code: 'stamp_not_allowed' });
+    vi.useRealTimers();
+    const pending = (await listPendingRequests()).find((r) => r.id === id)!;
+    expect(pending).toMatchObject({ kind: 'general', stamp: 'VIP', people: [] });
+    expect((await listLeaderRequests(leader.id)).find((r) => r.id === id)).toMatchObject({ kind: 'general', people: 0 });
+    await decideRequest(id, { decision: 'approve', excludedPersonIds: [] });
+    const links = await getRequestLinks(leader.id, id);
+    expect(links).toEqual([{ kind: 'general', name: 'رابط عام', org: null, stamp: 'VIP', url: expect.stringMatching(/\/i\/[a-z0-9]{16}$/) }]);
+    const [inv] = await sql`select kind, stamp, created_by_leader_id from invitations where leader_request_id = ${id}`;
+    expect(inv).toMatchObject({ kind: 'general', stamp: 'VIP', created_by_leader_id: leader.id });
+  });
+
+  it('a request whose invitations were all cancelled shows no links (not an error)', async () => {
+    const { t, leader } = await setup();
+    vi.useFakeTimers({ now: new Date('2026-10-01T00:00:00Z'), toFake: ['Date'] });
+    const { id } = await submitRequest(leader.id, input(t.id));
+    vi.useRealTimers();
+    await decideRequest(id, { decision: 'approve', excludedPersonIds: [] });
+    await sql`update invitations set status = 'revoked' where leader_request_id = ${id}`;
+    expect(await getRequestLinks(leader.id, id)).toEqual([]);
+  });
+
   it('routes enforce roles: leaders submit, the owner decides', async () => {
     const { t, leader } = await setup();
     await sql`update events set starts_at = now() + interval '20 days'`;

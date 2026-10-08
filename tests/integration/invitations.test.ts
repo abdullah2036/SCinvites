@@ -46,6 +46,15 @@ describe('owner invitations', () => {
     await expect(createInvitation(personal(draft.id))).rejects.toMatchObject({ code: 'template_not_approved' });
   });
 
+  it('a public link can carry any of the template stamps or «عضو», nothing else', async () => {
+    const general = (stamp: string) => createInvitation({ templateId, color: 'night', stamp, kind: 'general', customSlug: null, showQr: true } as never);
+    expect((await general('VIP')).slug).toMatch(/^[a-z0-9]{16}$/);
+    await general('عضو');
+    await expect(general('ضيف')).rejects.toMatchObject({ code: 'stamp_not_allowed' });
+    const stamps = await sql`select stamp from invitations where kind = 'general' order by created_at`;
+    expect(stamps.map((r) => r.stamp)).toEqual(['VIP', 'عضو']);
+  });
+
   it('copies the event place when none is given, and uses an explicit place otherwise', async () => {
     const a = await createInvitation(personal(templateId));
     const [rowA] = await sql`select place_type, place_name, place_url from invitations where id = ${a.id}`;

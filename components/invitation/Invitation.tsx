@@ -110,7 +110,8 @@ export default function Invitation({ view, mode: requestedMode, frame = 'fill', 
   }
 
   const name = general ? openedName || gname.trim() || 'ضيف نادي العلوم' : (view.invitee?.name ?? '');
-  const org = general ? 'عضو نادي العلوم' : [view.invitee?.title, view.invitee?.org].filter(Boolean).join(' · ');
+  // A public link can carry any stamp (e.g. VIP), so only the «عضو» one says "member".
+  const org = general ? (view.stamp === 'عضو' ? 'عضو نادي العلوم' : 'ضيف نادي العلوم') : [view.invitee?.title, view.invitee?.org].filter(Boolean).join(' · ');
   const online = view.place.type === 'online';
   const flags = Object.fromEntries(TRACKS.map((t) => [`is_${t}`, t === view.track]));
 

@@ -49,7 +49,7 @@ export async function getStats(): Promise<Stats> {
       select i.slug, (select count(*)::int from registrations r where r.invitation_id = i.id) as registrations
       from invitations i join templates t on t.id = i.template_id join events e on e.id = t.event_id
       where i.kind = 'general' and i.status <> 'revoked'
-      order by (e.starts_at > now()) desc, abs(extract(epoch from e.starts_at - now())) asc limit 1`,
+      order by (e.starts_at > now()) desc, abs(extract(epoch from e.starts_at - now())) asc, (i.created_by_leader_id is null) desc, i.created_at desc limit 1`,
     sql<{ n: number }[]>`select count(*)::int as n from leader_requests where status = 'pending'`,
     sql<Stats['pendingList']>`
       select r.id, l.name as "leaderName", r.stamp, e.title as "eventTitle", t.track, r.created_at as "createdAt",

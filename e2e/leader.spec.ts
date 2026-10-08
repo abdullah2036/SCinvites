@@ -65,12 +65,58 @@ test('full leader flow: access request → approval → email sign-in → names 
   const dialog = page.getByRole('dialog', { name: 'روابط الدعوات' });
   await expect(dialog.getByText('د. هالة البيشي')).toBeVisible();
   await expect(dialog.getByText('أ. عبدالله الغامدي')).toHaveCount(0);
+  // each personal link is shown in full (copyable by hand), and there is no misleading «copy all»
+  const [hala] = await db`select slug from invitations where invitee_name = 'د. هالة البيشي'`;
+  await expect(dialog.getByRole('textbox', { name: 'رابط د. هالة البيشي' })).toHaveValue(new RegExp(`/i/${hala.slug}\\?src=link$`));
+  await expect(dialog.getByRole('button', { name: /نسخ كل/ })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'نسخ الرابط' })).toHaveCount(2);
 
   // 7. a link opens the guest page with that name
   const [inv] = await db`select slug from invitations where invitee_name = 'م. ريم العمري'`;
   await page.goto(`/i/${inv.slug}`);
   await expect(page.getByText('م. ريم العمري')).toBeVisible({ timeout: 8000 });
   await owner.close();
+});
+
+test('a leader asks for a public VIP link, the owner approves it, and the leader gets one link to share', async ({ page, browser }) => {
+  await reset();
+  const [ev] = await db`insert into events (title, track, starts_at) values ('ثورة الصواريخ', 'space', now() + interval '20 days') returning id`;
+  await db`insert into templates (event_id, track, stamp_types, status, approved_at) values (${ev.id}, 'space', '{VIP,ضيف}', 'approved', now())`;
+  await db`insert into leaders (name, email, status, approved_at) values ('م. خالد الحربي', 's443012345@uqu.edu.sa', 'approved', now())`;
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await page.getByLabel('بريدك الجامعي').fill('s443012345@uqu.edu.sa');
+  await page.getByRole('button', { name: 'دخول', exact: true }).click();
+  await expect(page).toHaveURL(/\/leader$/);
+
+  // the «المدعوون» step offers «دعوة عامة»; a public link may carry any stamp
+  await page.getByRole('link', { name: /ثورة الصواريخ/ }).first().click();
+  await page.waitForLoadState('networkidle');
+  await page.getByRole('button', { name: /التالي/ }).click();
+  await page.getByRole('button', { name: 'دعوة عامة (رابط واحد)' }).click();
+  await page.getByRole('button', { name: 'VIP', exact: true }).click();
+  await page.getByRole('button', { name: /التالي/ }).click();
+  await page.getByRole('button', { name: /التالي/ }).click();
+  await expect(page.getByText('رابط عام واحد للجميع')).toBeVisible();
+  await page.getByRole('button', { name: 'إرسال للاعتماد' }).click();
+  await expect(page.getByText(/يظهر لك الرابط العام/)).toBeVisible();
+
+  const owner = await browser.newContext({ baseURL: E2E.baseURL });
+  const ownerPage = await owner.newPage();
+  await loginOwner(ownerPage);
+  await ownerPage.goto(`/${E2E.ownerPath}/approvals`);
+  await expect(ownerPage.getByRole('heading', { name: 'رابط عام · ختم VIP' })).toBeVisible();
+  await ownerPage.getByRole('button', { name: 'اعتماد الرابط العام' }).click();
+  await expect(ownerPage.getByText('اعتُمدت وأُبلغ القائد')).toBeVisible();
+  await owner.close();
+
+  await page.goto('/leader');
+  await page.waitForLoadState('networkidle');
+  await page.getByRole('button', { name: 'الرابط العام' }).click();
+  const dialog = page.getByRole('dialog', { name: 'روابط الدعوات' });
+  const [inv] = await db`select slug, kind, stamp from invitations`;
+  expect(inv).toMatchObject({ kind: 'general', stamp: 'VIP' });
+  await expect(dialog.getByRole('textbox', { name: 'رابط الدعوة العامة' })).toHaveValue(new RegExp(`/i/${inv.slug}\\?src=link$`));
 });
 
 test('leader pages redirect to login without a session', async ({ page }) => {

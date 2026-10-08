@@ -5,7 +5,8 @@ export function Scene() {
   return (
     <>
 
-        <div aria-hidden="true" style={S({ position: "absolute", inset: "0" })}>
+        {/* club-scene: hidden while the loader (which shows the same logo) is up, so the logo never appears twice */}
+        <div aria-hidden="true" className="club-scene" style={S({ position: "absolute", inset: "0" })}>
           <div style={S({ position: "absolute", left: "-20%", top: "-10%", width: "90%", height: "50%", borderRadius: "50%", background: "radial-gradient(closest-side, color-mix(in srgb, var(--c1) 22%, transparent), transparent)", filter: "blur(10px)" })} />
           <span className="ripple" style={S({ position: "absolute", left: "105px", top: "54px", width: "180px", height: "180px", borderRadius: "50%", border: "1.5px solid var(--c1)", animationDuration: "4s", animationDelay: "0.00s" })} />
           <span className="ripple" style={S({ position: "absolute", left: "105px", top: "54px", width: "180px", height: "180px", borderRadius: "50%", border: "1.5px solid var(--c1)", animationDuration: "4s", animationDelay: "1.33s" })} />

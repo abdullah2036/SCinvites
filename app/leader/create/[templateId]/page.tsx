@@ -24,6 +24,7 @@ export default async function LeaderCreatePage({ params, searchParams }: { param
         req && req.status === 'changes_requested'
           ? {
               requestId: req.id,
+              kind: req.kind,
               color: req.color,
               stamp: req.stamp,
               showQr: req.showQr,

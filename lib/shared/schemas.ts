@@ -77,7 +77,9 @@ export const RequestInputSchema = z.object({
   color: z.enum(COLORS),
   place: PlaceInput.nullish(),
   showQr: z.boolean().default(true),
-  people: z.array(z.object({ name: text(1, 80), org: optText(120), title: optText(80) })).min(1).max(200),
+  /** 'general' asks for one public link (no names); 'personal' for one link per name. */
+  kind: z.enum(['personal', 'general']).default('personal'),
+  people: z.array(z.object({ name: text(1, 80), org: optText(120), title: optText(80) })).max(200),
 });
 
 export const DecideInput = z.discriminatedUnion('decision', [

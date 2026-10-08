@@ -22,12 +22,24 @@ test('owner creates a personal invitation, gets the link, and sends a test copy'
 
 test('owner creates a general invitation with a custom short link', async ({ page }) => {
   await page.goto(`/${E2E.ownerPath}/create`);
-  await page.getByRole('button', { name: 'دعوة عامة للأعضاء' }).click();
+  await page.getByRole('button', { name: 'دعوة عامة (رابط واحد)' }).click();
   await page.getByPlaceholder('rr26').fill('club-night');
   await page.getByRole('button', { name: 'إنشاء الدعوة' }).click();
   await expect(page.getByText('دعوتك جاهزة')).toBeVisible();
   const [row] = await db`select kind, stamp from invitations where slug = 'club-night'`;
   expect(row).toEqual({ kind: 'general', stamp: 'عضو' });
+});
+
+test('owner creates a public VIP link (a public link can carry any stamp)', async ({ page }) => {
+  await page.goto(`/${E2E.ownerPath}/create`);
+  await page.waitForLoadState('networkidle');
+  await page.getByRole('button', { name: 'دعوة عامة (رابط واحد)' }).click();
+  await page.getByRole('button', { name: 'VIP', exact: true }).click();
+  await page.getByPlaceholder('rr26').fill('vip-night');
+  await page.getByRole('button', { name: 'إنشاء الدعوة' }).click();
+  await expect(page.getByText('دعوتك جاهزة')).toBeVisible();
+  const [row] = await db`select kind, stamp from invitations where slug = 'vip-night'`;
+  expect(row).toEqual({ kind: 'general', stamp: 'VIP' });
 });
 
 test('owner creates several invitations at once from pasted names', async ({ page }) => {

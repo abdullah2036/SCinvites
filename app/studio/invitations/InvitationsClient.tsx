@@ -7,6 +7,7 @@ import { TRACK_INFO } from '@/components/invitation/palette';
 import { taggedUrl } from '@/lib/shared/source';
 import type { GuestView, InvitationListItem, InvitationStatus } from '@/lib/shared/types';
 import { timeoutSignal } from '@/lib/shared/timeout';
+import { copyText } from '@/lib/shared/copy';
 
 const TILE: Record<string, string> = { club: '#13707B', space: '#0B3B41', chem: '#2F8C8A', phys: '#6FB7B8', bio: '#4F8F7E', math: '#C99A2E', sport: '#E0B95A' };
 const FILTERS: [string, InvitationStatus | null, string][] = [
@@ -132,8 +133,7 @@ export default function InvitationsClient({ items: initial }: { items: Invitatio
         date: day(i.createdAt),
         preview: () => openPreview(i),
         copy: async () => {
-          await navigator.clipboard?.writeText(taggedUrl(i.url, 'link')).catch(() => {});
-          say('نُسخ الرابط');
+          say((await copyText(taggedUrl(i.url, 'link'))) ? 'نُسخ الرابط' : `تعذر النسخ، انسخيه يدويًا: ${taggedUrl(i.url, 'link')}`);
         },
         manage: () => setManage({ item: i, name: i.inviteeName ?? '', org: i.inviteeOrg ?? '', title: i.inviteeTitle ?? '' }),
       };

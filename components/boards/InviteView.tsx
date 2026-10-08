@@ -13,7 +13,7 @@ export default function InviteView({ v }: { v: any }) {
           <div style={S({ position: "absolute", inset: "0", background: "linear-gradient(to bottom, transparent 30%, var(--sc) 100%)" })} />
         </div>
       ) : null}
- <TrackMotion track={v.track} kind="scene" />            <div style={S({ position: "absolute", inset: "0", display: "flex", flexDirection: "column", padding: "18px 16px 22px", boxSizing: "border-box", gap: "14px" })}>
+ <TrackMotion track={v.track} kind="scene" />            <div style={S({ position: "absolute", inset: "0", display: "flex", flexDirection: "column", padding: "18px 16px 22px", boxSizing: "border-box", gap: "14px", overflowY: "auto", WebkitOverflowScrolling: "touch" })}>{/* scrolls when the screen is shorter than the card (in-app browsers with toolbars) */}
         {/* top bar: club wordmark on the right, replay + save on the left */}
         <div style={S({ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", zIndex: "3" })}>
           <span style={S({ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 14px", borderRadius: "999px", background: "color-mix(in srgb, var(--tx) 10%, transparent)", WebkitBackdropFilter: "blur(12px)", backdropFilter: "blur(12px)", border: "1px solid color-mix(in srgb, var(--tx) 20%, transparent)", fontFamily: "TD, serif", fontSize: "15px" })}>

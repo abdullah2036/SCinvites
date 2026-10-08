@@ -4,6 +4,22 @@ import { Fragment } from 'react';
 import { css, S } from '@/components/boards/css';
 
 export default function CreateView({ v }: { v: any }) {
+  const audBlock = (
+            <div className="glass" style={S({ borderRadius: "26px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "10px" })}>
+              <span style={S({ fontSize: "13px", fontWeight: "700", color: "#13707B" })}>
+لمن الدعوة
+              </span>
+              <div role="group" style={S({ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px", padding: "5px", borderRadius: "999px", background: "rgba(255,255,255,.6)" })}>
+                {(v.audiences ?? []).map((o: any, oIndex: number) => (
+                  <Fragment key={oIndex}>
+                  <button type="button" className="chip" onClick={o.pick} aria-pressed={o.on} style={S({ height: "40px", border: "0", borderRadius: "999px", background: o.bg, color: o.text, fontFamily: "TS, sans-serif", fontWeight: "700", fontSize: "13px" })}>
+{o.name}
+                  </button>
+                  </Fragment>
+                ))}
+              </div>
+            </div>
+  );
   return (
     <>
     <div className="pg" style={S({ minHeight: "1300px", position: "relative", overflow: "hidden", fontFamily: "TS, sans-serif", color: "#18292C", background: "radial-gradient(55% 45% at 88% 6%, #BFE3E3 0%, rgba(191,227,227,0) 70%), radial-gradient(45% 40% at 6% 96%, #F2E1B4 0%, rgba(242,225,180,0) 70%), radial-gradient(60% 55% at 45% 55%, #DCEFEE 0%, #EAF3F0 55%, #F4F2EC 100%)", padding: "26px 44px 48px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: "20px" })}>
@@ -38,24 +54,7 @@ export default function CreateView({ v }: { v: any }) {
       ) : null}
       <div style={S({ position: "relative", display: "flex", flexWrap: "wrap", gap: "28px", alignItems: "flex-start" })}>
         <section style={S({ flex: "1 1 520px", minWidth: "0", display: "flex", flexDirection: "column", gap: "14px" })}>
-          {v.admin ? (
-            <>
-            <div className="glass" style={S({ borderRadius: "26px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "10px" })}>
-              <span style={S({ fontSize: "13px", fontWeight: "700", color: "#13707B" })}>
-لمن الدعوة
-              </span>
-              <div role="group" style={S({ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px", padding: "5px", borderRadius: "999px", background: "rgba(255,255,255,.6)" })}>
-                {(v.audiences ?? []).map((o: any, oIndex: number) => (
-                  <Fragment key={oIndex}>
-                  <button type="button" className="chip" onClick={o.pick} aria-pressed={o.on} style={S({ height: "40px", border: "0", borderRadius: "999px", background: o.bg, color: o.text, fontFamily: "TS, sans-serif", fontWeight: "700", fontSize: "13px" })}>
-{o.name}
-                  </button>
-                  </Fragment>
-                ))}
-              </div>
-            </div>
-            </>
-          ) : null}
+          {v.admin ? audBlock : null}
           {v.leader ? (
             <>
             <div className="glass" style={S({ borderRadius: "999px", padding: "6px", display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "4px" })}>
@@ -426,6 +425,7 @@ U
           ) : null}
           {v.showPeople ? (
             <>
+            {v.leader ? audBlock : null}
             <div className="glass" style={S({ borderRadius: "26px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "10px" })}>
               <span style={S({ fontSize: "13px", fontWeight: "700", color: "#13707B" })}>
 الختم
@@ -624,14 +624,16 @@ VIP
               <>
               <div style={S({ borderRadius: "26px", padding: "16px 18px", border: "1px dashed #13707B", background: "rgba(19,112,123,.06)", fontSize: "14px", lineHeight: "1.8", color: "#3E5456" })}>
                 <b style={S({ color: "#0B3B41" })}>
-دعوة عامة لكل الأعضاء · 
+دعوة عامة · 
                 </b>
-رابط واحد للجميع ويسجّل كل عضو اسمه وبريده قبل الفتح
+رابط واحد للجميع ويسجّل كل شخص اسمه وبريده قبل الفتح، ويظهر عليها ختم {v.stampLabel}
               </div>
+              {v.admin ? (
               <label style={S({ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: "#3E5456" })}>
 رابط مختصر (اختياري)
                 <input className="field" dir="ltr" value={v.customSlug} onChange={v.onCustomSlug} placeholder="rr26" maxLength={32} style={S({ height: "48px", border: "1px solid rgba(255,255,255,.95)", borderRadius: "999px", padding: "0 16px", fontFamily: "TS, sans-serif", fontSize: "15px", background: "rgba(255,255,255,.72)", color: "#18292C", textAlign: "left" })} />
               </label>
+              ) : null}
               </>
             ) : null}
             </>

@@ -8,6 +8,7 @@ import { parseNames } from '@/lib/shared/names';
 import { taggedUrl } from '@/lib/shared/source';
 import { TRACKS, COLORS, STAMPS, type Color, type GuestView, type PlaceType, type Track } from '@/lib/shared/types';
 import { timeoutSignal } from '@/lib/shared/timeout';
+import { copyText } from '@/lib/shared/copy';
 
 export type TemplateOption = {
   id: string;
@@ -28,6 +29,7 @@ export type TemplateOption = {
 };
 
 type Mode = 'owner' | 'leader';
+const MEMBER = 'عضو';
 const PLACE_TYPES: PlaceType[] = ['none', 'in_person', 'online'];
 
 function onlineName(url: string) {
@@ -61,7 +63,7 @@ export default function CreateForm({
   roleLine: string;
   initialTemplateId?: string;
   /** Leader resubmitting after «طلب تعديل» */
-  edit?: { requestId: string; color: Color; stamp: string; showQr: boolean; place: TemplateOption['place']; peopleText: string; note: string | null };
+  edit?: { requestId: string; kind: 'personal' | 'general'; color: Color; stamp: string; showQr: boolean; place: TemplateOption['place']; peopleText: string; note: string | null };
 }) {
   const leader = mode === 'leader';
   const first = templates.find((t) => t.id === initialTemplateId) ?? templates[0];
@@ -69,7 +71,7 @@ export default function CreateForm({
   const tpl = templates.find((t) => t.id === templateId) ?? first;
   const [color, setColor] = useState<Color>(edit?.color ?? tpl?.allowedColors[0] ?? 'night');
   const [stamp, setStamp] = useState<string>(edit?.stamp ?? tpl?.stampTypes.find((s) => s !== 'عضو') ?? 'VIP');
-  const [aud, setAud] = useState(0); // 0 personal, 1 general (owner only)
+  const [aud, setAud] = useState(edit?.kind === 'general' ? 1 : 0); // 0 personal, 1 general (one public link)
   const [cnt, setCnt] = useState(edit || leader ? 1 : 0); // 0 single, 1 several
   const [name, setName] = useState('');
   const [org, setOrg] = useState('');
@@ -86,12 +88,15 @@ export default function CreateForm({
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [created, setCreated] = useState<{ id: string; url: string; count: number } | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'ok' | 'failed' | null>(null);
   const [selfSent, setSelfSent] = useState(false);
   const [leaderDoneCount, setLeaderDoneCount] = useState<number | null>(null);
 
-  const gen = !leader && aud === 1;
+  const gen = aud === 1;
   const multi = !gen && cnt === 1;
+  // Stamps on offer: the template's; a public link may also be «عضو» (and any other stamp, e.g. a public VIP link).
+  const stampChoices = (tpl?.stampTypes ?? []).filter((s) => s !== MEMBER).concat(gen ? [MEMBER] : []);
+  const stampNow = stampChoices.includes(stamp) ? stamp : (stampChoices[0] ?? MEMBER);
   const { people, duplicates, overflow } = useMemo(() => parseNames(bulk), [bulk]);
   const placeType = PLACE_TYPES[placeIdx];
   const bump = () => setN((x) => x + 1);
@@ -101,7 +106,6 @@ export default function CreateForm({
     if (!t) return;
     setTemplateId(id);
     if (!t.allowedColors.includes(color)) setColor(t.allowedColors[0]);
-    if (!t.stampTypes.includes(stamp)) setStamp(t.stampTypes.find((s) => s !== 'عضو') ?? t.stampTypes[0]);
     setPlaceIdx(PLACE_TYPES.indexOf(t.place.type));
     setVenue(t.place.name ?? '');
     setPlaceUrl(t.place.url ?? '');
@@ -134,7 +138,15 @@ export default function CreateForm({
     setErrorMsg('');
     try {
       if (leader) {
-        const payload = { templateId: tpl!.id, color, stamp, place, showQr: qr, people: multi ? people : [{ name: name.trim(), org: org.trim() || null, title: title.trim() || null }] };
+        const payload = {
+          templateId: tpl!.id,
+          color,
+          stamp: stampNow,
+          place,
+          showQr: qr,
+          kind: gen ? 'general' : 'personal',
+          people: gen ? [] : multi ? people : [{ name: name.trim(), org: org.trim() || null, title: title.trim() || null }],
+        };
         if (edit) {
           const res = await fetch(`/api/requests/${edit.requestId}`, { signal: timeoutSignal(), method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => null);
           const data = await res?.json().catch(() => null);
@@ -146,7 +158,7 @@ export default function CreateForm({
         }
         return null;
       }
-      const base = { templateId: tpl!.id, color, stamp: gen ? 'عضو' : stamp, place, showQr: qr };
+      const base = { templateId: tpl!.id, color, stamp: stampNow, place, showQr: qr };
       if (multi) {
         const r = await postJson('/api/invitations', { ...base, people });
         const c = { id: r.items[0].id, url: r.items[0].url, count: r.items.length };
@@ -189,7 +201,7 @@ export default function CreateForm({
         status: 'created',
         track: tpl.track,
         color,
-        stamp: gen ? 'عضو' : stamp,
+        stamp: stampNow,
         artworkUrl: tpl.artworkUrl,
         invitee: gen ? null : { name: shownName, org: shownOrg || null, title: multi ? null : title.trim() || null },
         event: { title: tpl.eventTitle, subtitle: tpl.eventSubtitle, latinTitle: tpl.latinTitle, startsAt: tpl.startsAt, endsAt: tpl.endsAt },
@@ -213,8 +225,8 @@ export default function CreateForm({
     };
   });
   STAMPS.forEach((s, i) => {
-    const on = s === stamp;
-    r['st' + i] = !gen && s !== 'عضو' && !!tpl?.stampTypes.includes(s);
+    const on = s === stampNow;
+    r['st' + i] = stampChoices.includes(s);
     r['so' + i] = on ? 'true' : 'false';
     r['sb' + i] = on ? '#13707B' : 'rgba(255,255,255,.9)';
     r['sg' + i] = on ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.42)';
@@ -242,7 +254,7 @@ export default function CreateForm({
       },
     })),
     tplNote: leader ? 'قوالب معتمدة لك' : 'لكل مسار حركته، وثلاثة ألوان من هوية النادي',
-    stampLabel: gen ? 'عضو' : stamp,
+    stampLabel: stampNow,
     admin: !leader,
     leader,
     showTpl: !leader || step === 0,
@@ -261,8 +273,12 @@ export default function CreateForm({
     next: () => setStep((s) => Math.min(3, s + 1)),
     back: () => setStep((s) => Math.max(0, s - 1)),
     backOp: step === 0 ? 0.4 : 1,
-    reviewPeople: multi ? `${people.length.toLocaleString('ar-SA')} مدعوين` : name.trim() || '—',
-    audiences: opt(['دعوة شخصية', 'دعوة عامة للأعضاء'], aud, setAud),
+    reviewPeople: gen ? 'رابط عام واحد للجميع' : multi ? `${people.length.toLocaleString('ar-SA')} مدعوين` : name.trim() || '—',
+    audiences: opt(['دعوة شخصية', 'دعوة عامة (رابط واحد)'], aud, (i) => {
+      setAud(i);
+      if (i === 1) setStamp(MEMBER); // a public link starts as «عضو»; any other stamp can be picked
+      bump();
+    }),
     counts: opt(['مدعو واحد', 'عدة مدعوين'], cnt, setCnt),
     personal: !gen,
     general: gen,
@@ -300,10 +316,11 @@ export default function CreateForm({
     errorMsg,
     doneAdmin: !!created && !leader,
     doneLeader: leaderDoneCount !== null && leader,
-    leaderDone:
-      (leaderDoneCount ?? 0) > 1
-        ? `أرسلت ${(leaderDoneCount ?? 0).toLocaleString('ar-SA')} أسماء دفعة وحدة، وبعد الاعتماد تطلع لك روابطها جاهزة للإرسال`
-        : 'بعد الاعتماد يطلع لك رابط الدعوة جاهز للإرسال',
+    leaderDone: gen
+      ? 'بعد الاعتماد يظهر لك الرابط العام في «طلباتي» جاهزًا للنسخ والإرسال'
+      : (leaderDoneCount ?? 0) > 1
+        ? `أرسلت ${(leaderDoneCount ?? 0).toLocaleString('ar-SA')} أسماء دفعة وحدة، وبعد الاعتماد تظهر روابطها في «طلباتي» جاهزة للإرسال`
+        : 'بعد الاعتماد يظهر رابط الدعوة في «طلباتي» جاهزًا للإرسال',
     roleLine,
     roleDot: leader ? '#6FB7B8' : '#C99A2E',
     crumb: leader ? (edit ? `دعواتي / تعديل الطلب${edit.note ? ` · ${edit.note}` : ''}` : 'دعواتي / إنشاء') : 'الدعوات / إنشاء',
@@ -315,7 +332,7 @@ export default function CreateForm({
     again: () => {
       setCreated(null);
       setSelfSent(false);
-      setCopied(false);
+      setCopied(null);
       setName('');
       setOrg('');
       setTitle('');
@@ -323,11 +340,8 @@ export default function CreateForm({
       setCustomSlug('');
     },
     link: created && created.count > 1 ? `${created.count.toLocaleString('ar-SA')} دعوات جاهزة · صفحة الدعوات` : link,
-    copy: async () => {
-      await navigator.clipboard?.writeText(link).catch(() => {});
-      setCopied(true);
-    },
-    copyLabel: copied ? 'تم النسخ' : 'نسخ الرابط',
+    copy: async () => setCopied((await copyText(link)) ? 'ok' : 'failed'),
+    copyLabel: copied === 'ok' ? 'تم النسخ' : copied === 'failed' ? 'تعذر النسخ، انسخيه من الخانة' : 'نسخ الرابط',
     waHref: created ? `https://wa.me/?text=${encodeURIComponent(`دعوة من نادي العلوم: ${taggedUrl(created.url, 'whatsapp')}`)}` : '#',
     share: (e: React.MouseEvent) => {
       if (navigator.share && created) {

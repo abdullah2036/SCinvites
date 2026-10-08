@@ -6,9 +6,10 @@ import LeaderView from '@/components/boards/LeaderView';
 import AutoRefresh from '@/components/shell/AutoRefresh';
 import { PALETTE, TRACK_INFO } from '@/components/invitation/palette';
 import { taggedUrl } from '@/lib/shared/source';
-import type { LeaderRequestItem } from '@/lib/server/requests';
+import type { LeaderRequestItem, RequestLink } from '@/lib/server/requests';
 import type { TemplateOption } from '@/components/create/CreateForm';
 import { timeoutSignal } from '@/lib/shared/timeout';
+import { copyText } from '@/lib/shared/copy';
 
 const ar = (n: number) => n.toLocaleString('ar-SA');
 const day = (iso: string) => new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'long' }).format(new Date(iso));
@@ -18,13 +19,12 @@ const STATUS: Record<string, [string, string, string]> = {
   changes_requested: ['طلب تعديل', '#8E6C1F', 'rgba(201,154,46,.15)'],
 };
 
-type Link = { name: string; org: string | null; url: string };
 
 export default function LeaderClient({ leader, templates, requests }: { leader: { name: string; email: string }; templates: TemplateOption[]; requests: LeaderRequestItem[] }) {
   const router = useRouter();
-  const [links, setLinks] = useState<{ title: string; items: Link[] } | null>(null);
+  const [links, setLinks] = useState<{ title: string; event: string; general: boolean; items: RequestLink[] } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
+  const [copied, setCopied] = useState<{ key: string; ok: boolean } | null>(null);
   const [error, setError] = useState('');
   const [account, setAccount] = useState(false);
   const [nameDraft, setNameDraft] = useState(leader.name);
@@ -59,13 +59,13 @@ export default function LeaderClient({ leader, templates, requests }: { leader: 
       setError('تعذر تحميل الروابط، حاول مرة أخرى');
       return;
     }
-    setLinks({ title: `${r.eventTitle} · دعوات ${r.stamp}`, items: await res.json() });
+    const general = r.kind === 'general';
+    setLinks({ title: general ? r.eventTitle : `${r.eventTitle} · ختم ${r.stamp}`, event: r.eventTitle, general, items: await res.json() });
   }
 
   async function copy(text: string, key: string) {
-    await navigator.clipboard?.writeText(text).catch(() => {});
-    setCopied(key);
-    setTimeout(() => setCopied(null), 1600);
+    setCopied({ key, ok: await copyText(text) });
+    setTimeout(() => setCopied((c) => (c?.key === key ? null : c)), 2500);
   }
 
   // Without a template there is nothing to create yet: say so plainly instead of leaving dead buttons.
@@ -111,8 +111,9 @@ export default function LeaderClient({ leader, templates, requests }: { leader: 
     })),
     mine: requests.map((r) => {
       const st = STATUS[r.status];
+      const general = r.kind === 'general';
       return {
-        what: `دعوات ${r.stamp} · ${ar(r.people)} ${r.people === 1 ? 'مدعو' : 'مدعوين'}`,
+        what: general ? `رابط عام · ختم ${r.stamp}` : `${ar(r.people)} ${r.people === 1 ? 'مدعو' : 'مدعوين'} · ختم ${r.stamp}`,
         note: r.status === 'changes_requested' && r.note ? `${r.eventTitle} · ملاحظة: ${r.note}` : `${r.eventTitle} · ${day(r.createdAt)}`,
         bg: PALETTE[r.color].bg,
         status: st[0],
@@ -120,7 +121,7 @@ export default function LeaderClient({ leader, templates, requests }: { leader: 
         sb: st[2],
         ready: r.status === 'approved' || r.status === 'changes_requested',
         busy: busyId === r.id,
-        sendLabel: r.status === 'approved' ? `روابط ${ar(r.people)} دعوات` : 'تعديل الطلب',
+        sendLabel: r.status !== 'approved' ? 'تعديل الطلب' : general ? 'الرابط العام' : r.people === 1 ? 'رابط الدعوة' : `روابط ${ar(r.people)} دعوات`,
         send: () => (r.status === 'approved' ? openLinks(r) : router.push(`/leader/create/${r.templateId}?edit=${r.id}`)),
       };
     }),
@@ -176,33 +177,60 @@ export default function LeaderClient({ leader, templates, requests }: { leader: 
                   ×
                 </button>
               </div>
-              <p style={{ margin: 0, fontSize: 13, color: '#4F6567' }}>كل رابط خاص بشخص واحد، أرسله له فقط</p>
-              {links.items.map((l) => (
-                <div key={l.url} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 16, background: 'rgba(255,255,255,.7)' }}>
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <b style={{ display: 'block', fontSize: 14 }}>{l.name}</b>
-                    <span style={{ fontSize: 12, color: '#4F6567' }}>{l.org}</span>
-                  </span>
-                  <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`${l.name}، يسعدنا دعوتك من نادي العلوم: ${taggedUrl(l.url, 'whatsapp')}`)}`}
-                    target="_blank"
-                    rel="noopener"
-                    style={{ height: 34, padding: '0 12px', display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: '#0B3B41', color: '#fff', textDecoration: 'none', fontSize: 13 }}
-                  >
-                    واتساب
-                  </a>
-                  <button type="button" onClick={() => copy(taggedUrl(l.url, 'link'), l.url)} style={{ height: 34, padding: '0 12px', borderRadius: 999, border: '1px solid #0B3B41', background: 'transparent', color: '#0B3B41', cursor: 'pointer', fontSize: 13 }}>
-                    {copied === l.url ? 'نُسخ' : 'نسخ'}
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => copy(links.items.map((l) => `${l.name}: ${taggedUrl(l.url, 'link')}`).join('\n'), 'all')}
-                style={{ height: 46, borderRadius: 999, border: 0, background: '#C99A2E', color: '#0B2B30', fontWeight: 700, cursor: 'pointer' }}
-              >
-                {copied === 'all' ? 'نُسخت كل الروابط' : 'نسخ كل الروابط'}
-              </button>
+              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: '#4F6567' }}>
+                {links.general ? 'رابط واحد للجميع، أرسله في القروبات، ويسجّل كل شخص اسمه قبل فتح الدعوة' : 'كل رابط خاص بشخص واحد، أرسل لكل شخص رابطه فقط'}
+              </p>
+              {!links.items.length && (
+                <p role="status" style={{ margin: 0, padding: '12px 14px', borderRadius: 16, background: 'rgba(255,255,255,.7)', fontSize: 14, color: '#8E6C1F' }}>
+                  لا توجد روابط فعّالة في هذا الطلب، ربما ألغتها صاحبة المنصة. تواصل معها أو أرسل طلبًا جديدًا
+                </p>
+              )}
+              {links.items.map((l) => {
+                const url = taggedUrl(l.url, 'link');
+                const general = l.kind === 'general';
+                const message = general ? `دعوة من نادي العلوم لفعالية ${links.event}: ${taggedUrl(l.url, 'whatsapp')}` : `${l.name}، يسعدنا دعوتك من نادي العلوم: ${taggedUrl(l.url, 'whatsapp')}`;
+                const state = copied?.key === l.url ? copied : null;
+                return (
+                  <div key={l.url} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', borderRadius: 18, background: 'rgba(255,255,255,.75)' }}>
+                    <span>
+                      <b style={{ fontSize: 14, color: '#0B3B41' }}>{general ? `رابط عام · ختم ${l.stamp}` : l.name}</b>
+                      {!general && l.org && <span style={{ fontSize: 12, color: '#4F6567' }}> · {l.org}</span>}
+                    </span>
+                    {/* The link itself, visible and selectable: long-press to copy where the copy button can't */}
+                    <input
+                      readOnly
+                      value={url}
+                      dir="ltr"
+                      aria-label={`رابط ${general ? 'الدعوة العامة' : l.name}`}
+                      onFocus={(e) => e.currentTarget.select()}
+                      style={{ height: 40, borderRadius: 12, border: '1px solid rgba(11,59,65,.18)', background: '#fff', padding: '0 12px', fontSize: 13, color: '#0B3B41', fontFamily: 'ui-monospace, monospace', width: '100%', boxSizing: 'border-box' }}
+                    />
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(message)}`}
+                        target="_blank"
+                        rel="noopener"
+                        style={{ height: 36, padding: '0 14px', display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: '#0B3B41', color: '#fff', textDecoration: 'none', fontSize: 13 }}
+                      >
+                        واتساب
+                      </a>
+                      <button type="button" onClick={() => void copy(url, l.url)} style={{ height: 36, padding: '0 14px', borderRadius: 999, border: '1px solid #0B3B41', background: 'transparent', color: '#0B3B41', cursor: 'pointer', fontSize: 13 }}>
+                        {state ? (state.ok ? 'نُسخ ✓' : 'تعذر النسخ') : 'نسخ الرابط'}
+                      </button>
+                      {typeof navigator !== 'undefined' && 'share' in navigator && (
+                        <button
+                          type="button"
+                          onClick={() => void navigator.share({ title: 'دعوة من نادي العلوم', text: message.replace(/https?:\/\/\S+$/, ''), url: taggedUrl(l.url, 'link') }).catch(() => {})}
+                          style={{ height: 36, padding: '0 14px', borderRadius: 999, border: '1px solid rgba(11,59,65,.3)', background: 'transparent', color: '#0B3B41', cursor: 'pointer', fontSize: 13 }}
+                        >
+                          مشاركة
+                        </button>
+                      )}
+                    </div>
+                    {state && !state.ok && <span style={{ fontSize: 12, color: '#9B3B2E' }}>المتصفح منع النسخ، اضغط مطولًا على الرابط في الخانة وانسخه</span>}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

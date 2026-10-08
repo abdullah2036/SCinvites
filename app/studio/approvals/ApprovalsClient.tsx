@@ -14,6 +14,8 @@ const COL: Record<State, [string, string]> = {
   'بانتظار': ['#5E594F', 'rgba(125,119,105,.13)'],
 };
 const ar = (n: number) => n.toLocaleString('ar-SA');
+/** What a request asks for: one public link, or one personal invitation per name. */
+const what = (r: PendingRequest) => (r.kind === 'general' ? `رابط عام · ختم ${r.stamp}` : `${ar(r.people.length)} ${r.people.length === 1 ? 'مدعو' : 'مدعوين'} · ختم ${r.stamp}`);
 
 function daysLeft(iso: string) {
   const d = Math.ceil((new Date(iso).getTime() - Date.now()) / 86400_000);
@@ -68,7 +70,7 @@ export default function ApprovalsClient({ requests: initial }: { requests: Pendi
   const kept = cur ? cur.people.filter((p) => !off[p.id]).length : 0;
   const v = {
     reqs: requests.map((r, i) => ({
-      what: `دعوات ${r.stamp} · ${ar(r.people.length)} ${r.people.length === 1 ? 'مدعو' : 'مدعوين'}`,
+      what: what(r),
       from: r.leaderName,
       bg: PALETTE[r.color].bg,
       state: states[i],
@@ -83,7 +85,7 @@ export default function ApprovalsClient({ requests: initial }: { requests: Pendi
       },
     })),
     cur: cur && {
-      what: `دعوات ${cur.stamp} · ${ar(cur.people.length)} ${cur.people.length === 1 ? 'مدعو' : 'مدعوين'}`,
+      what: what(cur),
       from: cur.leaderName,
       tpl: `${cur.eventTitle} · ${PALETTE[cur.color].label} · ${TRACK_INFO[cur.track].name}`,
       stamp: cur.stamp,
@@ -97,6 +99,7 @@ export default function ApprovalsClient({ requests: initial }: { requests: Pendi
             </a>
           )}
           {cur.place.url && <span>· {cur.showQr ? 'يحمل باركود لهذا الرابط' : 'بدون باركود'}</span>}
+          {cur.kind === 'general' && <span style={{ flexBasis: '100%' }}>رابط واحد يرسله القائد للجميع، ويسجّل كل شخص اسمه قبل فتح الدعوة</span>}
         </span>
       ),
     },
@@ -118,13 +121,13 @@ export default function ApprovalsClient({ requests: initial }: { requests: Pendi
     busy,
     error,
     decided: !!cur && states[sel] !== 'بانتظار',
-    approveLabel: !cur ? '' : states[sel] === 'معتمدة' ? 'اعتُمدت وأُبلغ القائد' : `اعتماد ${ar(kept)} ${kept === 1 ? 'اسم' : 'أسماء'}`,
+    approveLabel: !cur ? '' : states[sel] === 'معتمدة' ? 'اعتُمدت وأُبلغ القائد' : cur.kind === 'general' ? 'اعتماد الرابط العام' : `اعتماد ${ar(kept)} ${kept === 1 ? 'اسم' : 'أسماء'}`,
     approve: () => decide('approve'),
     revise: () => decide('changes_requested'),
     empty: (
       <section className="glass s2" style={{ gridColumn: 'span 2', borderRadius: 30, padding: 32, display: 'grid', placeItems: 'center', textAlign: 'center', gap: 8, minHeight: 220 }}>
         <b style={{ fontSize: 18, color: '#0B3B41' }}>لا توجد طلبات بانتظارك</b>
-        <span style={{ fontSize: 14, color: '#4F6567' }}>تظهر هنا قوائم الأسماء التي يرسلها القادة قبل إنشاء دعواتهم. طلبات دخول القادة الجدد في «الإعدادات»</span>
+        <span style={{ fontSize: 14, color: '#4F6567' }}>تظهر هنا طلبات القادة (قوائم أسماء أو روابط عامة) قبل إنشاء دعواتهم. طلبات دخول القادة الجدد في «الإعدادات»</span>
       </section>
     ),
   };

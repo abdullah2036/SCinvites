@@ -37,6 +37,17 @@ test('personal invitation shows the invitee and records the open', async ({ page
   await expect.poll(async () => (await db`select status from invitations where slug = 'personalinvite01'`)[0].status).toBe('declined');
 });
 
+test('on a short phone screen (an in-app browser with toolbars) the guest can scroll to the answer buttons', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 560 });
+  await page.goto('/i/personalinvite01');
+  await expect(page.getByText('د. محمد أحمد')).toBeVisible({ timeout: 8000 });
+  const yes = page.getByRole('button', { name: 'سأحضر' });
+  await yes.scrollIntoViewIfNeeded();
+  await expect(yes).toBeInViewport();
+  await yes.click();
+  await expect(page.getByText('تم تأكيد حضورك')).toBeVisible();
+});
+
 test('revoked and unknown links show friendly screens', async ({ page }) => {
   await page.goto('/i/revokedinvite001');
   await expect(page.getByText('هذه الدعوة لم تعد متاحة')).toBeVisible();

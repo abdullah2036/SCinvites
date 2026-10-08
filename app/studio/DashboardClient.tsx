@@ -9,6 +9,7 @@ import { formatDateShort, toArabicDigits } from '@/lib/shared/dates';
 import { taggedUrl } from '@/lib/shared/source';
 import { TRACKS } from '@/lib/shared/types';
 import type { Stats } from '@/lib/server/stats';
+import { copyText } from '@/lib/shared/copy';
 
 const STATUS: Record<string, [string, string, string]> = {
   confirmed: ['مؤكَّد', '#13707B', 'rgba(19,112,123,.12)'],
@@ -89,7 +90,7 @@ export default function DashboardClient({ stats, base, ownerName }: { stats: Sta
     generalLink: g ? g.url.replace(/^https?:\/\//, '') : 'لا توجد دعوة عامة بعد',
     copyGeneral: async () => {
       if (!g) return;
-      await navigator.clipboard?.writeText(taggedUrl(g.url, 'link')).catch(() => {});
+      if (!(await copyText(taggedUrl(g.url, 'link')))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     },
@@ -115,7 +116,7 @@ export default function DashboardClient({ stats, base, ownerName }: { stats: Sta
     })),
     reqs: stats.pendingList.map((r) => ({
       what: `دعوة ${r.stamp} · ${r.eventTitle}`,
-      who: `${r.leaderName} · ${ar(r.people)} ${r.people === 1 ? 'اسم' : 'أسماء'}`,
+      who: `${r.leaderName} · ${r.people ? `${ar(r.people)} ${r.people === 1 ? 'اسم' : 'أسماء'}` : 'رابط عام'}`,
       bg: css(paletteVars('night')).background as string,
     })),
     q,

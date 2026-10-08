@@ -8,7 +8,7 @@ test('owner excludes one name and approves the rest', async ({ page }) => {
   const { requestId } = await seedRequest(templateId);
   await loginOwner(page);
   await page.goto(`/${E2E.ownerPath}/approvals`);
-  await expect(page.getByRole('heading', { name: /دعوات VIP · ٣/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /٣ مدعوين · ختم VIP/ })).toBeVisible();
   await expect(page.getByText('المكان: قاعة الطلب')).toBeVisible();
   await expect(page.getByRole('link', { name: 'https://maps.example.com/request' })).toBeVisible();
   await expect(page.getByText(/يحمل باركود لهذا الرابط/)).toBeVisible();
