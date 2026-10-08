@@ -56,7 +56,7 @@ export async function GET() {
     );
     out.freshConnection = `ok ${Math.round(performance.now() - t1)} ms`;
     sent.length = 0;
-    await within(probe`select ${'probe'}::text as x`, 5000);
+    await within(probe`select ${'probe'}::text as x, ${'a'} = any(${['a', 'b']}) as y`, 5000);
     out.oneRoundTrip = sent.includes('H') ? `NO (${sent.join('')}) — postgres.js patch not applied` : `yes (${sent.join('')})`;
     out.sessions = rows.map((r) => `${r.who ?? '?'} ${r.state ?? '?'}${r.wait ? ` wait=${r.wait}` : ''}${r.xact_s != null ? ` tx=${r.xact_s}s` : ''}${r.query_s != null ? ` q=${r.query_s}s` : ''}${r.blocked_by ? ` BLOCKED by ${r.blocked_by}` : ''} | ${r.query ?? ''}`);
     // What the stuck-connection job did: runs that ended at least one connection, and any failed runs (last 2 days).
