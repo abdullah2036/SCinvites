@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BASE: https://your-site.example
+  BASE: ${{ vars.LOADTEST_BASE }} # the live site's address (repository variable), kept out of the public repo
 
 jobs:
   setup:

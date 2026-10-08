@@ -4,7 +4,7 @@ Digital invitations for the Science Club: locked templates with per-track motion
 
 - **Club guide (Arabic):** [docs/guide-ar.md](docs/guide-ar.md)
 - **Developer runbook:** [docs/runbook.md](docs/runbook.md)
-- **Spec and plan:** [docs/superpowers/specs](docs/superpowers/specs) · [docs/superpowers/plans](docs/superpowers/plans)
+- **Spec:** [docs/superpowers/specs](docs/superpowers/specs)
 - **Client handoff and design boards:** [docs/handoff.md](docs/handoff.md) · `design-reference/`
 
 ## Quick start
@@ -17,4 +17,4 @@ npm run dev
 
 Tests: `npm test` · `npx playwright test` · `npm run typecheck` · `npm run lint`.
 
-> The Thmanyah font files in `public/fonts/` are licensed for use, not redistribution — keep this repository private.
+> The Thmanyah font files are licensed for use, not redistribution, so they are not in this repository: the build fetches them from private storage (`npm run fonts:fetch`). Without them the site falls back to system fonts.

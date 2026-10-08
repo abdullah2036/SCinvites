@@ -11,7 +11,7 @@
 //   Writing to a non-local database needs --allow-remote-db.
 //
 //   Read-only smoke check (pages and health, no sign-ins, no writes):
-//     npm run loadtest -- --base https://your-site.example --read-only --users 50 --minutes 1 --slug <public slug>
+//     npm run loadtest -- --base https://<your-site> --read-only --users 50 --minutes 1 --slug <public slug>
 //
 // Students arrive in a spike (as when a link is posted in a WhatsApp group): open the invitation, register, answer.
 // Leaders sign in by email, open their page and the create form, submit names, then auto-refresh every 30 s.
