@@ -65,7 +65,7 @@ export async function GET() {
         select to_char(start_time at time zone 'Asia/Riyadh', 'MM-DD HH24:MI:SS') as at, status, left(return_message, 80) as message
         from cron.job_run_details d join cron.job j on j.jobid = d.jobid
         where j.jobname = 'reap-stuck-connections' and start_time > now() - interval '2 days'
-          and (status <> 'succeeded' or return_message <> 'SELECT 0')
+          and (status <> 'succeeded' or return_message not in ('SELECT 0', '0 rows'))
         order by start_time desc limit 25`,
       5000,
     ).catch(() => null);
