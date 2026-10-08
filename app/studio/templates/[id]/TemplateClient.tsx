@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import TemplateView from '@/components/boards/TemplateView';
 import Invitation from '@/components/invitation/Invitation';
 import { PALETTE, TRACK_INFO, paletteVars } from '@/components/invitation/palette';
-import { TRACKS, COLORS, STAMPS, type Color, type Track, type GuestView, type PlaceType } from '@/lib/shared/types';
+import { TRACKS, COLORS, type Color, type Track, type GuestView, type PlaceType } from '@/lib/shared/types';
 import { timeoutSignal } from '@/lib/shared/timeout';
 import { riyadhDay } from '@/lib/shared/dates';
 
@@ -175,7 +175,6 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
       }
     : null;
 
-  const chip = (on: boolean): React.CSSProperties => ({ height: 34, padding: '0 14px', borderRadius: 999, border: `1.5px solid ${on ? '#13707B' : 'rgba(19,112,123,.25)'}`, background: on ? '#13707B' : 'rgba(255,255,255,.7)', color: on ? '#fff' : '#0B3B41', fontSize: 13, cursor: 'pointer' });
 
   const v = {
     ...r,
@@ -265,19 +264,6 @@ export default function TemplateClient({ initial, events, base }: { initial: Tem
           آخر موعد للطلبات (أيام قبل الفعالية)
           <input type="number" min={0} max={60} value={t.requestDeadlineDays} onChange={(e) => set({ requestDeadlineDays: Math.max(0, Math.min(60, Number(e.target.value) || 0)) })} className="field" style={field} />
         </label>
-        <div style={label}>
-          الأختام المتاحة
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {STAMPS.filter((s) => s !== 'عضو').map((s) => {
-              const on = t.stampTypes.includes(s);
-              return (
-                <button key={s} type="button" aria-pressed={on} onClick={() => set({ stampTypes: on ? t.stampTypes.filter((x) => x !== s) : [...t.stampTypes, s] })} style={chip(on)}>
-                  {s}
-                </button>
-              );
-            })}
-          </div>
-        </div>
         {!events.length && (
           <a href={`${base}/events`} style={{ fontSize: 13 }}>
             أضيفي فعالية أولًا

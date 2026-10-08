@@ -14,12 +14,10 @@ test('owner sets up a template, saves it as a draft, then approves and publishes
   await page.getByRole('button', { name: /الكيمياء/ }).first().click();
   await page.getByRole('button', { name: /عاجي/ }).click(); // toggle ivory off
   await expect(page.getByText('بعد الاعتماد يظهر مباشرة لكل القادة المعتمدين')).toBeVisible();
-  await page.getByRole('button', { name: 'متحدث', exact: true }).click();
   await page.getByRole('button', { name: 'حفظ كمسودة' }).click();
   await expect(page.getByText('حُفظت المسودة')).toBeVisible();
   const [draft] = await db`select status, track, allowed_colors, stamp_types from templates`;
   expect(draft).toMatchObject({ status: 'draft', track: 'chem', allowed_colors: ['petrol', 'night'] });
-  expect(draft.stamp_types).toContain('متحدث');
 
   await page.getByRole('button', { name: 'اعتماد ونشر' }).click();
   await expect(page.getByText('اعتُمد · شوفيه في معرض القوالب')).toBeVisible();
@@ -31,7 +29,7 @@ test('editing an approved template creates a new version and keeps the old one l
   const [t] = await db`insert into templates (event_id, track, stamp_types, status, approved_at) values (${ev.id}, 'chem', '{VIP}', 'approved', now()) returning id`;
   await page.goto(`/${E2E.ownerPath}/templates/${t.id}`);
   await expect(page.getByText(/إصدار جديد/)).toBeVisible();
-  await page.getByRole('button', { name: 'ضيف', exact: true }).click();
+  await page.getByLabel(/آخر موعد للطلبات/).fill('5');
   await page.getByRole('button', { name: /اعتماد ونشر/ }).click();
   await expect(page.getByText('اعتُمد · شوفيه في معرض القوالب')).toBeVisible();
   const rows = await db`select version, status from templates order by version`;

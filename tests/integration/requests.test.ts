@@ -55,7 +55,9 @@ describe('leader requests', () => {
     const { t, leader } = await setup();
     vi.useFakeTimers({ now: new Date('2026-10-01T00:00:00Z'), toFake: ['Date'] });
     await expect(submitRequest(leader.id, input(t.id, { color: 'ivory' }))).rejects.toMatchObject({ code: 'color_not_allowed' });
-    await expect(submitRequest(leader.id, input(t.id, { stamp: 'شريك' }))).rejects.toMatchObject({ code: 'stamp_not_allowed' });
+    await expect(submitRequest(leader.id, input(t.id, { stamp: 'مزيف' }))).rejects.toMatchObject({ code: 'stamp_not_allowed' });
+    // every stamp works, even one the template doesn't list (stamp_types is VIP + متحدث here)
+    await expect(submitRequest(leader.id, input(t.id, { stamp: 'شريك' }))).resolves.toMatchObject({ count: 3 });
   });
 
   it('approving with exclusions creates exactly the right personal invitations', async () => {
@@ -127,9 +129,9 @@ describe('leader requests', () => {
     vi.useFakeTimers({ now: new Date('2026-10-01T00:00:00Z'), toFake: ['Date'] });
     const { id, count } = await submitRequest(leader.id, input(t.id, { kind: 'general', stamp: 'VIP', people: [] }));
     expect(count).toBe(0);
-    // «عضو» is allowed on a public link even though the template's personal stamps don't include it
+    // «عضو» works on public and personal requests alike
     await submitRequest(leader.id, input(t.id, { kind: 'general', stamp: 'عضو', people: [] }));
-    await expect(submitRequest(leader.id, input(t.id, { kind: 'personal', stamp: 'عضو' }))).rejects.toMatchObject({ code: 'stamp_not_allowed' });
+    await expect(submitRequest(leader.id, input(t.id, { kind: 'personal', stamp: 'عضو' }))).resolves.toMatchObject({ count: 3 });
     vi.useRealTimers();
     const pending = (await listPendingRequests()).find((r) => r.id === id)!;
     expect(pending).toMatchObject({ kind: 'general', stamp: 'VIP', people: [] });

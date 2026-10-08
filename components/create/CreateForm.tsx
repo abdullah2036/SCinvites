@@ -70,7 +70,7 @@ export default function CreateForm({
   const [templateId, setTemplateId] = useState(first?.id ?? '');
   const tpl = templates.find((t) => t.id === templateId) ?? first;
   const [color, setColor] = useState<Color>(edit?.color ?? tpl?.allowedColors[0] ?? 'night');
-  const [stamp, setStamp] = useState<string>(edit?.stamp ?? tpl?.stampTypes.find((s) => s !== 'عضو') ?? 'VIP');
+  const [stamp, setStamp] = useState<string>(edit?.stamp ?? 'VIP');
   const [aud, setAud] = useState(edit?.kind === 'general' ? 1 : 0); // 0 personal, 1 general (one public link)
   const [cnt, setCnt] = useState(edit || leader ? 1 : 0); // 0 single, 1 several
   const [name, setName] = useState('');
@@ -94,9 +94,8 @@ export default function CreateForm({
 
   const gen = aud === 1;
   const multi = !gen && cnt === 1;
-  // Stamps on offer: the template's; a public link may also be «عضو» (and any other stamp, e.g. a public VIP link).
-  const stampChoices = (tpl?.stampTypes ?? []).filter((s) => s !== MEMBER).concat(gen ? [MEMBER] : []);
-  const stampNow = stampChoices.includes(stamp) ? stamp : (stampChoices[0] ?? MEMBER);
+  // Every stamp works on every invitation, personal or public.
+  const stampNow = (STAMPS as readonly string[]).includes(stamp) ? stamp : 'VIP';
   const { people, duplicates, overflow } = useMemo(() => parseNames(bulk), [bulk]);
   const placeType = PLACE_TYPES[placeIdx];
   const bump = () => setN((x) => x + 1);
@@ -226,7 +225,7 @@ export default function CreateForm({
   });
   STAMPS.forEach((s, i) => {
     const on = s === stampNow;
-    r['st' + i] = stampChoices.includes(s);
+    r['st' + i] = true;
     r['so' + i] = on ? 'true' : 'false';
     r['sb' + i] = on ? '#13707B' : 'rgba(255,255,255,.9)';
     r['sg' + i] = on ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.42)';

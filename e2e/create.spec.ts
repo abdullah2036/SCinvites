@@ -33,7 +33,11 @@ test('owner creates a general invitation with a custom short link', async ({ pag
 test('owner creates a public VIP link (a public link can carry any stamp)', async ({ page }) => {
   await page.goto(`/${E2E.ownerPath}/create`);
   await page.waitForLoadState('networkidle');
+  // all five stamps for personal and public, even though this template only lists VIP
+  const stamps = ['VIP', 'ضيف', 'متحدث', 'شريك', 'عضو'];
+  for (const s of stamps) await expect(page.getByRole('button', { name: s, exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'دعوة عامة (رابط واحد)' }).click();
+  for (const s of stamps) await expect(page.getByRole('button', { name: s, exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'VIP', exact: true }).click();
   await page.getByPlaceholder('rr26').fill('vip-night');
   await page.getByRole('button', { name: 'إنشاء الدعوة' }).click();

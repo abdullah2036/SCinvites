@@ -26,15 +26,15 @@ test('owner creates an event, filters by track, and sees it on the events screen
   await expect(page.getByText('لا توجد فعاليات في هذا المسار')).toBeVisible();
 });
 
-test('gallery shows templates and filters by stamp and track', async ({ page }) => {
+test('gallery shows templates and filters by track (every template takes every stamp)', async ({ page }) => {
   const [ev] = await db`insert into events (title, track, starts_at) values ('تفاعل', 'chem', now() + interval '20 days') returning id`;
   await db`insert into templates (event_id, track, stamp_types, status, approved_at) values (${ev.id}, 'chem', '{متحدث}', 'approved', now())`;
   await db`insert into templates (event_id, track, stamp_types, status, approved_at) values (${ev.id}, 'space', '{VIP}', 'approved', now())`;
   await page.goto(`/${E2E.ownerPath}/templates`);
   await expect(page.locator('a.lift')).toHaveCount(2);
-  await page.getByRole('button', { name: 'متحدث' }).click();
-  await expect(page.locator('a.lift')).toHaveCount(1);
-  await page.getByRole('button', { name: 'الكل' }).click();
+  await expect(page.getByRole('button', { name: 'متحدث' })).toHaveCount(0);
   await page.getByRole('button', { name: 'الفلك والفضاء' }).click();
   await expect(page.locator('a.lift')).toHaveCount(1);
+  await page.getByRole('button', { name: 'كل المسارات' }).click();
+  await expect(page.locator('a.lift')).toHaveCount(2);
 });

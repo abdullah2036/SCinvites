@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import TemplatesView from '@/components/boards/TemplatesView';
 import { PALETTE, TRACK_INFO, paletteVars } from '@/components/invitation/palette';
-import { STAMPS, TRACKS, type Color, type Track } from '@/lib/shared/types';
+import { TRACKS, type Color, type Track } from '@/lib/shared/types';
 
 export type GalleryCard = {
   id: string;
@@ -29,9 +29,7 @@ const leadersLine = (h: GalleryCard['hidden']) => (h ? LEADERS[h] : 'يراه ا
 const DOT: Record<Track, string> = { club: '#13707B', space: '#0B3B41', chem: '#2F8C8A', phys: '#6FB7B8', bio: '#4F8F7E', math: '#C99A2E', sport: '#E0B95A' };
 
 export default function TemplatesClient({ cards, base }: { cards: GalleryCard[]; base: string }) {
-  const [ty, setTy] = useState(0);
   const [tr, setTr] = useState(0);
-  const types = ['الكل', ...STAMPS];
   const chip = (names: string[], cur: number, set: (i: number) => void, dots?: string[]) =>
     names.map((name, i) => ({
       name,
@@ -42,11 +40,11 @@ export default function TemplatesClient({ cards, base }: { cards: GalleryCard[];
       dot: dots ? dots[i] : 'transparent',
       pick: () => set(i),
     }));
-  const shown = cards.filter((c) => (ty === 0 || c.stampTypes.includes(types[ty]) || (types[ty] === 'عضو')) && (tr === 0 || c.track === TRACKS[tr - 1]));
+  const shown = cards.filter((c) => tr === 0 || c.track === TRACKS[tr - 1]);
 
   const v = {
     base,
-    types: chip(types, ty, setTy),
+    types: [],
     tracks: chip(['كل المسارات', ...TRACKS.map((t) => TRACK_INFO[t].name)], tr, setTr, ['#8FA3A5', ...TRACKS.map((t) => DOT[t])]),
     cards: shown.map((c) => ({
       id: c.id,
@@ -56,7 +54,7 @@ export default function TemplatesClient({ cards, base }: { cards: GalleryCard[];
       vars: paletteVars(c.allowedColors[0] ?? 'night'),
       subtitle: c.eventSubtitle ?? TRACK_INFO[c.track].name,
       title: c.eventTitle,
-      line: `${TRACK_INFO[c.track].name} · ${c.stampTypes.join(' · ')} · ${leadersLine(c.hidden)}`,
+      line: `${TRACK_INFO[c.track].name} · ${leadersLine(c.hidden)}`,
       colors: c.allowedColors.map((x) => PALETTE[x].label).join('، '),
     })),
     empty: shown.length ? null : (

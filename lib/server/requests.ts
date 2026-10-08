@@ -4,7 +4,7 @@ import { getSettings } from './settings';
 import { sendEmail, emailLayout, escapeHtml } from './email';
 import { templatesVisibleToLeaders } from './templates';
 import * as invitations from './invitations';
-import { AppError, type Color, type PlaceType, type RequestStatus, type Track } from '@/lib/shared/types';
+import { AppError, STAMPS, type Color, type PlaceType, type RequestStatus, type Track } from '@/lib/shared/types';
 
 export type RequestPerson = { name: string; org?: string | null; title?: string | null };
 export type RequestInput = {
@@ -18,7 +18,6 @@ export type RequestInput = {
   people: RequestPerson[];
 };
 export type RequestKind = 'personal' | 'general';
-const MEMBER = 'عضو';
 
 /** The names a request carries: none for a public link. */
 const peopleOf = (input: RequestInput) => (input.kind === 'general' ? [] : input.people);
@@ -35,8 +34,8 @@ async function checkTemplate(input: RequestInput) {
   const t = (await templatesVisibleToLeaders()).find((x) => x.id === input.templateId);
   if (!t) throw new AppError('template_not_available', 403, 'هذا القالب غير متاح لك');
   if (!t.allowed_colors.includes(input.color)) throw new AppError('color_not_allowed', 400, 'هذا اللون غير متاح لهذا القالب');
-  // A public link may also carry the «عضو» stamp; personal invitations use the template's stamps.
-  if (!t.stamp_types.includes(input.stamp) && !(input.kind === 'general' && input.stamp === MEMBER)) throw new AppError('stamp_not_allowed', 400, 'هذا الختم غير متاح لهذا القالب');
+  // Every stamp works for personal and public invitations alike.
+  if (!(STAMPS as readonly string[]).includes(input.stamp)) throw new AppError('stamp_not_allowed', 400, 'هذا الختم غير متاح');
   const deadline = new Date(t.event_starts_at).getTime() - t.request_deadline_days * 86400_000;
   if (now.getTime() > deadline) throw new AppError('deadline_passed', 409, 'انتهى موعد الطلب لهذه الفعالية');
   if (input.kind !== 'general' && (!input.people.length || input.people.length > 200)) throw new AppError('invalid_input', 400, 'أضف من ١ إلى ٢٠٠ اسم');

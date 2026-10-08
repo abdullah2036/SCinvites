@@ -6,6 +6,7 @@ import { outbox } from '@/lib/server/email';
 import { POST as postInvitation } from '@/app/api/invitations/route';
 import { resetDb, makeEvent, makeTemplate } from '../setup/db';
 import { makeRequest } from '../setup/request';
+import { STAMPS } from '@/lib/shared/types';
 
 const personal = (templateId: string, over: Record<string, unknown> = {}) =>
   ({ templateId, color: 'night', stamp: 'VIP', kind: 'personal', invitee: { name: 'د. محمد أحمد', org: 'وكالة الفضاء', title: null }, showQr: true, ...over }) as never;
@@ -40,19 +41,22 @@ describe('owner invitations', () => {
 
   it('enforces the template colors, stamps, approval and invitee name', async () => {
     await expect(createInvitation(personal(templateId, { color: 'ivory' }))).rejects.toMatchObject({ code: 'color_not_allowed' });
-    await expect(createInvitation(personal(templateId, { stamp: 'ضيف' }))).rejects.toMatchObject({ code: 'stamp_not_allowed' });
+    await expect(createInvitation(personal(templateId, { stamp: 'مزيف' }))).rejects.toMatchObject({ code: 'stamp_not_allowed' });
     await expect(createInvitation(personal(templateId, { invitee: null }))).rejects.toMatchObject({ code: 'invitee_required' });
     const draft = await makeTemplate({ status: 'draft', approved_at: null });
     await expect(createInvitation(personal(draft.id))).rejects.toMatchObject({ code: 'template_not_approved' });
   });
 
-  it('a public link can carry any of the template stamps or «عضو», nothing else', async () => {
+  it('every stamp works on personal and public invitations alike (whatever the template lists); unknown ones are refused', async () => {
     const general = (stamp: string) => createInvitation({ templateId, color: 'night', stamp, kind: 'general', customSlug: null, showQr: true } as never);
-    expect((await general('VIP')).slug).toMatch(/^[a-z0-9]{16}$/);
-    await general('عضو');
-    await expect(general('ضيف')).rejects.toMatchObject({ code: 'stamp_not_allowed' });
-    const stamps = await sql`select stamp from invitations where kind = 'general' order by created_at`;
-    expect(stamps.map((r) => r.stamp)).toEqual(['VIP', 'عضو']);
+    for (const s of STAMPS) {
+      await general(s);
+      await createInvitation(personal(templateId, { stamp: s }));
+    }
+    await expect(general('مزيف')).rejects.toMatchObject({ code: 'stamp_not_allowed' });
+    const rows = await sql`select kind, stamp from invitations order by created_at`;
+    expect(rows.filter((r) => r.kind === 'general').map((r) => r.stamp)).toEqual([...STAMPS]);
+    expect(rows.filter((r) => r.kind === 'personal').map((r) => r.stamp)).toEqual([...STAMPS]);
   });
 
   it('copies the event place when none is given, and uses an explicit place otherwise', async () => {

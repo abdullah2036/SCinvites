@@ -4,7 +4,7 @@ import { getSettings } from './settings';
 import { sendEmail, emailLayout, escapeHtml } from './email';
 import { randomSlug, isValidCustomSlug } from '@/lib/shared/slugs';
 import type { InvitationInputT } from '@/lib/shared/schemas';
-import { AppError, type InvitationListItem, type InvitationStatus, type InvitationKind } from '@/lib/shared/types';
+import { AppError, STAMPS, type InvitationListItem, type InvitationStatus, type InvitationKind } from '@/lib/shared/types';
 
 export const invitationUrl = (slug: string) => `${process.env.APP_URL}/i/${slug}`;
 
@@ -19,15 +19,15 @@ export async function createInvitation(
   opts: { leaderId?: string | null; requestId?: string | null; db?: Db; allowSuperseded?: boolean } = {},
 ): Promise<{ id: string; slug: string; url: string }> {
   const db = opts.db ?? sql;
-  const [t] = await db<{ status: string; allowed_colors: string[]; stamp_types: string[]; place_type: string; place_name: string | null; place_url: string | null }[]>`
-    select t.status, t.allowed_colors, t.stamp_types, e.place_type, e.place_name, e.place_url
+  const [t] = await db<{ status: string; allowed_colors: string[]; place_type: string; place_name: string | null; place_url: string | null }[]>`
+    select t.status, t.allowed_colors, e.place_type, e.place_name, e.place_url
     from templates t join events e on e.id = t.event_id where t.id = ${input.templateId}`;
   if (!t) throw new AppError('not_found', 404, 'القالب غير موجود');
   // A leader request made on an older version stays approvable after the template gets a new version.
   if (t.status !== 'approved' && !(opts.allowSuperseded && t.status === 'superseded')) throw new AppError('template_not_approved', 409, 'القالب غير معتمد');
   if (!t.allowed_colors.includes(input.color)) throw new AppError('color_not_allowed', 400, 'هذا اللون غير متاح لهذا القالب');
-  // Personal: one of the template's stamps. Public link: those or «عضو» (e.g. a public VIP link).
-  if (!t.stamp_types.includes(input.stamp) && !(input.kind === 'general' && input.stamp === 'عضو')) throw new AppError('stamp_not_allowed', 400, 'هذا الختم غير متاح لهذا القالب');
+  // Every stamp works for personal and public invitations alike.
+  if (!(STAMPS as readonly string[]).includes(input.stamp)) throw new AppError('stamp_not_allowed', 400, 'هذا الختم غير متاح');
   if (input.kind === 'personal' && !input.invitee?.name) throw new AppError('invitee_required', 400, 'اكتبي اسم المدعو');
 
   const place = input.place ?? { type: t.place_type, name: t.place_name, url: t.place_url };
