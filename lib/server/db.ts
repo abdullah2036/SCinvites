@@ -1,3 +1,4 @@
+import net from 'node:net';
 import postgres from 'postgres';
 import { waitUntil } from '@vercel/functions';
 
@@ -9,6 +10,27 @@ export type Db = Sql | Tx;
 const IDLE_SECONDS = 5;
 /** Stay awake this long after the last query starts: covers queries that wait their turn in the pool, then idle close. */
 const HOLD_SECONDS = 20;
+/**
+ * A connection that neither sends nor receives anything for this long while in use is dead (pooler hiccup, dropped
+ * network): it is destroyed, its query fails with an error the page can retry, and the pool opens a fresh one.
+ * Without this, one silent connection could hold a server's requests forever ("everything loads forever until I close
+ * the windows"). Idle pooled connections close after IDLE_SECONDS, long before this.
+ */
+const SILENT_MS = Number(process.env.DB_SILENT_MS ?? 15_000);
+
+type SocketOptions = { host: string | string[]; port: number | number[] };
+const first = <T,>(x: T | T[]) => (Array.isArray(x) ? x[0] : x);
+
+/** Exported for tests. */
+export function socketWithTimeout(o: SocketOptions, silentMs = SILENT_MS): Promise<net.Socket> {
+  return new Promise((resolve, reject) => {
+    const s = net.connect(Number(first(o.port)), String(first(o.host)));
+    s.setKeepAlive(true, 10_000);
+    s.setTimeout(silentMs, () => s.destroy(new Error(`database connection silent for ${silentMs} ms`)));
+    s.once('connect', () => resolve(s));
+    s.once('error', reject);
+  });
+}
 
 let instance: Sql | null = null;
 
@@ -22,7 +44,8 @@ function connect(): Sql {
     max_lifetime: 10 * 60,
     connect_timeout: 10,
     onnotice: () => {},
-  });
+    socket: (o: SocketOptions) => socketWithTimeout(o),
+  } as never);
 }
 
 /*

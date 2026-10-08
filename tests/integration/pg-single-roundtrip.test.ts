@@ -3,7 +3,7 @@ import net from 'node:net';
 import postgres from 'postgres';
 
 // patches/postgres+3.4.9.patch: plain values must go in one round trip (Parse+Bind+Execute+Sync, no Flush), so the
-// Supabase transaction pooler never holds a connection waiting on a client mid-query. Lists still describe first.
+// Supabase transaction pooler never holds a connection waiting on a client mid-query — lists included (sent as array literals).
 describe('postgres.js patch: one round trip for plain values', () => {
   it('sends scalar-parameter queries in one write ending in Sync, and still describes first for arrays', async () => {
     const url = new URL(process.env.DATABASE_URL!);
@@ -33,9 +33,9 @@ describe('postgres.js patch: one round trip for plain values', () => {
       expect(types).toEqual(['P', 'D', 'B', 'E', 'S']); // one exchange, no Flush ('H')
 
       writes.length = 0;
-      const [a] = await sql`select ${['x', 'y']}::text[] as list`;
-      expect(a.list).toEqual(['x', 'y']);
-      expect(writes.flatMap(messageTypes)).toContain('H'); // arrays: describe first, as before
+      const [a] = await sql`select ${['x', 'y "q"', 'z,w']}::text[] as list, ${'b'} = any(${['a', 'b']}) as found`;
+      expect(a).toEqual({ list: ['x', 'y "q"', 'z,w'], found: true });
+      expect(writes.flatMap(messageTypes)).toEqual(['P', 'D', 'B', 'E', 'S']); // lists too: one exchange
     } finally {
       await sql.end();
     }

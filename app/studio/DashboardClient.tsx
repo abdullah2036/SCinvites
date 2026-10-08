@@ -27,9 +27,11 @@ export default function DashboardClient({ stats, base, ownerName }: { stats: Sta
   const [q, setQ] = useState('');
   const [copied, setCopied] = useState(false);
 
+  const hasNext = !!stats.nextEvent; // a boolean, so auto-refresh (new objects every 30 s) doesn't restart the intro
   useEffect(() => {
     setNow(Date.now()); // eslint-disable-line react-hooks/set-state-in-effect -- start the clock after hydration
-    const tick = setInterval(() => setNow(Date.now()), 1000);
+    // The countdown redraws the whole board every second: only while there is an upcoming event to count down to.
+    const tick = hasNext ? setInterval(() => setNow(Date.now()), 1000) : undefined;
     const t0 = performance.now();
     let raf = 0;
     const step = (t: number) => {
@@ -42,7 +44,7 @@ export default function DashboardClient({ stats, base, ownerName }: { stats: Sta
       clearInterval(tick);
       cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [hasNext]);
 
   const ne = stats.nextEvent;
   const left = ne && now ? Math.max(0, new Date(ne.startsAt).getTime() - now) : 0;
