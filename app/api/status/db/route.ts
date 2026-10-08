@@ -61,6 +61,17 @@ export async function GET() {
     out.sessions = rows.map((r) => `${r.who ?? '?'} ${r.state ?? '?'}${r.wait ? ` wait=${r.wait}` : ''}${r.xact_s != null ? ` tx=${r.xact_s}s` : ''}${r.query_s != null ? ` q=${r.query_s}s` : ''}${r.blocked_by ? ` BLOCKED by ${r.blocked_by}` : ''} | ${r.query ?? ''}`);
   } catch (e) {
     out.freshConnection = `${(e as Error).message === 'timeout' ? 'STUCK (no answer in 8 s)' : `error: ${(e as Error).message.slice(0, 80)}`} after ${Math.round(performance.now() - t1)} ms`;
+    // What the stuck-connection job did: runs that ended at least one connection, and any failed runs (last 2 days).
+    const runs = await within(
+      probe<{ at: string; status: string; message: string }[]>`
+        select to_char(start_time at time zone 'Asia/Riyadh', 'MM-DD HH24:MI:SS') as at, status, left(return_message, 80) as message
+        from cron.job_run_details d join cron.job j on j.jobid = d.jobid
+        where j.jobname = 'reap-stuck-connections' and start_time > now() - interval '2 days'
+          and (status <> 'succeeded' or return_message <> 'SELECT 0')
+        order by start_time desc limit 25`,
+      5000,
+    ).catch(() => null);
+    out.reaperActions = runs ? runs.map((r) => `${r.at} ${r.status} ${r.message}`) : 'unavailable';
   } finally {
     await probe.end({ timeout: 1 }).catch(() => {});
   }
