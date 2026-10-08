@@ -29,3 +29,9 @@ backups/
 public/fonts/*.woff2
 assets/fonts/
 .next-perf/
+
+# Private to the developer: runbook, club guide, client handoff and design files, AI-assistant instructions (never published)
+.private/
+CLAUDE.md
+AGENTS.md
+.claude/

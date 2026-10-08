@@ -1,6 +1,6 @@
 // Traffic test: simulates launch-day users against a running copy of the site and prints latency/error stats.
 //
-//   Local (production build + throwaway database; see docs/runbook.md):
+//   Local (production build + throwaway database; see this script's flags):
 //     npm run loadtest -- --base http://localhost:3200 --students 400 --leaders 40 --minutes 2
 //
 //   Production, from several machines (GitHub → Actions → "Load test production"):

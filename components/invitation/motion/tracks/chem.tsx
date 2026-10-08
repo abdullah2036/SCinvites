@@ -1,4 +1,4 @@
-// chem track — scene and loader, moved verbatim from the Invite board (design-reference/Invite.dc.html).
+// chem track — scene and loader, moved verbatim from the Invite board (the club's design boards).
 import { S } from '@/components/boards/css';
 
 export function Scene() {

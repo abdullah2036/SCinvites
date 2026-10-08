@@ -1,6 +1,6 @@
 import type { Color, Track } from '@/lib/shared/types';
 
-/** Copied from the `VA` array in design-reference/Invite.dc.html. */
+/** Copied from the `VA` array in the Invite design board. */
 export const PALETTE: Record<Color, { label: string; bg: string; c1: string; c2: string; tx: string; mut: string; sw: string; ll: number; sc: string }> = {
   petrol: { label: 'بترولي', bg: 'radial-gradient(120% 80% at 75% 0%, #1A7F86 0%, #0E4F56 45%, #072A2F 100%)', c1: '#7FD0D4', c2: '#E7C873', tx: '#FFFFFF', mut: 'rgba(255,255,255,.78)', sw: '#0E4F56', ll: 1, sc: '#072A2F' },
   night: { label: 'ليلي', bg: 'radial-gradient(120% 80% at 25% 0%, #17485A 0%, #0B2533 50%, #050F17 100%)', c1: '#9FDCE0', c2: '#E7C873', tx: '#FFFFFF', mut: 'rgba(255,255,255,.78)', sw: '#0B2533', ll: 1, sc: '#050F17' },

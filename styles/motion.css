@@ -1,4 +1,4 @@
-/* Shared design-system motion and utility classes, copied verbatim from the Claude Design boards (design-reference/*.dc.html). */
+/* Shared design-system motion and utility classes, copied verbatim from the club's design boards. */
 @keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(18px,-22px)}}
 @keyframes drift2{0%,100%{transform:translate(0,0) rotate(12deg)}50%{transform:translate(-14px,16px) rotate(18deg)}}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}

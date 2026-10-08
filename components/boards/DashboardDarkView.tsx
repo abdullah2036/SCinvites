@@ -1,5 +1,5 @@
 /* eslint-disable */
-// Ported from design-reference/DashboardDark.dc.html, then wired to real data by hand.
+// Ported from the DashboardDark design board, then wired to real data by hand.
 import { Fragment } from 'react';
 import { css, S } from '@/components/boards/css';
 

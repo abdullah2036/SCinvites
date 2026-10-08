@@ -1,4 +1,4 @@
-// math card cover — moved verbatim from the Events board (design-reference/Events.dc.html).
+// math card cover — moved verbatim from the Events board (the club's design boards).
 import { S } from '@/components/boards/css';
 
 export default function Cover() {
